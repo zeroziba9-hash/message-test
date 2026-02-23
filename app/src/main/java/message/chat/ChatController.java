@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +18,29 @@ public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatService chatService;
+    private final ChannelPresenceService presenceService;
 
-    public ChatController(SimpMessagingTemplate messagingTemplate, ChatService chatService) {
+    public ChatController(
+            SimpMessagingTemplate messagingTemplate,
+            ChatService chatService,
+            ChannelPresenceService presenceService) {
         this.messagingTemplate = messagingTemplate;
         this.chatService = chatService;
+        this.presenceService = presenceService;
+    }
+
+    // 채널 입장(접속 사용자 목록 관리)
+    @MessageMapping("/channels/{channelId}/join")
+    public void join(
+            @DestinationVariable String channelId,
+            ChatSendRequest request,
+            @Header("simpSessionId") String sessionId) {
+        try {
+            var snapshot = presenceService.join(channelId, request.getSender(), sessionId);
+            messagingTemplate.convertAndSend("/sub/channels/" + channelId + "/presence", snapshot);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
 
     // 클라가 /pub/channels/{channelId} 로 보내면 여기로 들어옴
@@ -46,6 +66,15 @@ public class ChatController {
             @RequestParam(defaultValue = "50") int limit) {
         try {
             return chatService.getRecentMessages(channelId, limit);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @GetMapping("/api/channels/{channelId}/online-users")
+    public PresenceUpdate getOnlineUsers(@PathVariable String channelId) {
+        try {
+            return presenceService.snapshot(channelId);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

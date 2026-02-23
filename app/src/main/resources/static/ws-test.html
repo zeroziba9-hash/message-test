@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Realtime Chat Console</title>
+    <title>사내 메신저 콘솔</title>
     <link rel="stylesheet" href="/css/ws-test.css" />
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
@@ -13,44 +13,52 @@
 <body>
     <div class="app">
         <aside class="sidebar">
-            <div class="brand">Realtime Chat Console</div>
+            <div class="brand">사내 메신저</div>
 
             <div class="section">
-                <label class="label" for="sender">Sender</label>
-                <input id="sender" value="zeroziba" />
+                <label class="label" for="sender">내 닉네임</label>
+                <input id="sender" value="사용자1" />
             </div>
 
             <div class="section">
-                <label class="label" for="channel">Channel ID</label>
+                <label class="label" for="channel">채널</label>
                 <div class="row">
                     <input id="channel" value="general" />
-                    <button id="connectBtn" class="btn-primary">Connect</button>
+                    <button id="connectBtn" class="btn-primary">입장</button>
                 </div>
-                <div class="hint">/sub/channels/{id} 에 구독됨</div>
+                <div class="hint">엔터로 메시지 전송 가능</div>
             </div>
 
-            <div class="section" style="display:grid; gap:8px;">
-                <button id="historyBtn">Load History</button>
-                <button id="channelsBtn">Refresh Channels</button>
+            <div class="section action-buttons">
+                <button id="historyBtn">대화 기록</button>
+                <button id="channelsBtn">채널 새로고침</button>
             </div>
 
-            <div class="channels" id="channelList"></div>
+            <div class="section list-section">
+                <div class="list-title">채널 목록</div>
+                <div class="channels" id="channelList"></div>
+            </div>
+
+            <div class="section list-section online-section">
+                <div class="list-title">접속 중 <span id="onlineCount">0</span>명</div>
+                <div class="online-users" id="onlineUsers"></div>
+            </div>
         </aside>
 
         <main class="main">
             <header class="topbar">
                 <h1 id="roomTitle"># general</h1>
-                <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">DISCONNECTED</span></div>
+                <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">연결 끊김</span></div>
             </header>
 
             <section class="messages" id="messages"></section>
 
             <footer class="composer">
                 <div>
-                    <textarea id="content" placeholder="메시지를 입력하세요. Enter 전송 / Shift+Enter 줄바꿈"></textarea>
+                    <textarea id="content" placeholder="메시지를 입력하세요 (Enter 전송 / Shift+Enter 줄바꿈)"></textarea>
                     <div class="hint">Enter: 전송 · Shift+Enter: 줄바꿈</div>
                 </div>
-                <button id="sendBtn" class="btn-primary">Send</button>
+                <button id="sendBtn" class="btn-primary">전송</button>
             </footer>
         </main>
     </div>
@@ -67,6 +75,8 @@
         const statusTextEl = document.getElementById("statusText");
         const statusDotEl = document.getElementById("statusDot");
         const channelListEl = document.getElementById("channelList");
+        const onlineUsersEl = document.getElementById("onlineUsers");
+        const onlineCountEl = document.getElementById("onlineCount");
 
         document.getElementById("connectBtn").addEventListener("click", connect);
         document.getElementById("historyBtn").addEventListener("click", loadHistory);
@@ -81,7 +91,7 @@
         });
 
         function setStatus(connected) {
-            statusTextEl.textContent = connected ? "CONNECTED" : "DISCONNECTED";
+            statusTextEl.textContent = connected ? "연결됨" : "연결 끊김";
             statusDotEl.classList.toggle("ok", connected);
         }
 
@@ -97,7 +107,7 @@
             const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : "-";
             wrap.innerHTML = `
                 <div class="meta">
-                    <strong>${escapeHtml(msg.sender || "unknown")}</strong>
+                    <strong>${escapeHtml(msg.sender || "알수없음")}</strong>
                     <span>${escapeHtml(sentAt)}</span>
                 </div>
                 <div class="content">${escapeHtml(msg.content || "")}</div>
@@ -116,6 +126,27 @@
             channelEl.value = currentChannel;
         }
 
+        function renderPresence(snapshot) {
+            const users = snapshot?.users || [];
+            onlineCountEl.textContent = snapshot?.onlineCount ?? users.length;
+            onlineUsersEl.innerHTML = "";
+
+            if (users.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "empty";
+                empty.textContent = "접속 중인 사용자가 없습니다.";
+                onlineUsersEl.appendChild(empty);
+                return;
+            }
+
+            users.forEach(user => {
+                const item = document.createElement("div");
+                item.className = "online-user";
+                item.innerHTML = `<span class="user-dot"></span><span>${escapeHtml(user)}</span>`;
+                onlineUsersEl.appendChild(item);
+            });
+        }
+
         function connect() {
             currentChannel = getChannelId();
             updateRoomTitle();
@@ -130,13 +161,26 @@
 
             stompClient.connect({}, () => {
                 setStatus(true);
+
                 stompClient.subscribe(`/sub/channels/${currentChannel}`, (frame) => {
                     const msg = JSON.parse(frame.body);
                     const mine = (msg.sender || "") === senderEl.value.trim();
                     renderMessage(msg, mine);
                 });
+
+                stompClient.subscribe(`/sub/channels/${currentChannel}/presence`, (frame) => {
+                    renderPresence(JSON.parse(frame.body));
+                });
+
+                // 입장 이벤트 전송
+                stompClient.send(`/pub/channels/${currentChannel}/join`, {}, JSON.stringify({
+                    sender: senderEl.value.trim(),
+                    content: ""
+                }));
+
                 loadHistory();
                 loadChannels();
+                loadOnlineUsers();
             }, () => {
                 setStatus(false);
             });
@@ -144,7 +188,7 @@
 
         function sendMsg() {
             if (!stompClient || !stompClient.connected) {
-                alert("먼저 Connect 해줘.");
+                alert("먼저 채널에 입장해 주세요.");
                 return;
             }
 
@@ -197,6 +241,17 @@
             }
         }
 
+        async function loadOnlineUsers() {
+            try {
+                const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/online-users`);
+                if (!res.ok) throw new Error("online users load failed");
+                const data = await res.json();
+                renderPresence(data);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         function escapeHtml(str) {
             return str
                 .replaceAll('&', '&amp;')
@@ -208,6 +263,7 @@
 
         updateRoomTitle();
         loadChannels();
+        loadOnlineUsers();
     </script>
 </body>
 
