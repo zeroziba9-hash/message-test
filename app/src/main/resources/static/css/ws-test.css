@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
-  --panel: rgba(18, 10, 14, .9);
-  --panel-2: rgba(24, 12, 18, .95);
-  --line: rgba(255, 106, 138, 0.2);
-  --line-strong: rgba(255, 122, 152, 0.34);
-  --text: #ffeef3;
-  --muted: #c9a6b2;
-  --accent: #ff4d79;
-  --accent-2: #d83462;
-  --ok: #6ef3ba;
-  --danger: #ff5f85;
+  --panel: rgba(15, 12, 14, .94);
+  --panel-2: rgba(19, 14, 17, .96);
+  --line: rgba(146, 120, 129, 0.28);
+  --line-strong: rgba(172, 137, 149, 0.34);
+  --text: #f4edf0;
+  --muted: #b3a2a9;
+  --accent: #b64665;
+  --accent-2: #8f324d;
+  --ok: #66d8ac;
+  --danger: #d8607f;
   --radius: 12px;
   --gap: 10px;
 }
@@ -24,9 +24,9 @@ body {
   color: var(--text);
   font: 14px/1.5 Inter, 'Noto Sans KR', Arial, sans-serif;
   background:
-    radial-gradient(900px 520px at 0% 0%, #ff3f6b1f 0%, transparent 55%),
-    radial-gradient(700px 520px at 100% 100%, #cc295215 0%, transparent 62%),
-    linear-gradient(145deg, #080609, #130a0f 55%, #1a0d14);
+    radial-gradient(900px 520px at 0% 0%, #7b3c5215 0%, transparent 55%),
+    radial-gradient(700px 520px at 100% 100%, #5b273611 0%, transparent 62%),
+    linear-gradient(145deg, #0a090b, #111012 55%, #171417);
 }
 
 .app {
@@ -46,7 +46,7 @@ body {
 .sidebar,
 .rightbar {
   min-height: 0;
-  background: linear-gradient(180deg, #1a0f16f0, #120b11f0);
+  background: linear-gradient(180deg, #181417f2, #121013f2);
 }
 
 .sidebar {
@@ -69,13 +69,21 @@ body {
   margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--line);
+  letter-spacing: .2px;
+}
+
+.rightbar .online-users {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(255,255,255,.02);
 }
 
 .brand, .section {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: linear-gradient(180deg, #ffffff05, #0000001a);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 16px rgba(0,0,0,.18);
+  background: linear-gradient(180deg, #ffffff03, #0000001f);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 8px 20px rgba(0,0,0,.22);
 }
 
 .brand {
@@ -89,11 +97,11 @@ body {
 
 .brand::before {
   content: "";
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: linear-gradient(120deg, #79a5ff, #a879ff);
-  box-shadow: 0 0 18px #7ea4ff95;
+  background: linear-gradient(120deg, #d07590, #92445b);
+  box-shadow: 0 0 10px #a7577190;
 }
 
 .section { padding: 12px; }
@@ -104,19 +112,24 @@ input, textarea, select, button, .nickname-value { font: inherit; }
 
 input, textarea, select, .nickname-value {
   width: 100%;
-  border: 1px solid rgba(255, 122, 152, .28);
-  background: #120912;
+  border: 1px solid rgba(171, 139, 150, .28);
+  background: #100e11;
   color: var(--text);
   border-radius: 10px;
   padding: 10px 11px;
   outline: none;
 }
 
+input:focus, textarea:focus, select:focus {
+  border-color: rgba(182, 90, 118, .7);
+  box-shadow: 0 0 0 3px rgba(182, 70, 101, .16);
+}
+
 .nickname-value { font-weight: 700; }
 
 button {
-  border: 1px solid rgba(255, 122, 152, .35);
-  background: #24101a;
+  border: 1px solid rgba(170, 136, 147, .35);
+  background: #1c171b;
   color: var(--text);
   border-radius: 10px;
   padding: 9px 10px;
@@ -125,14 +138,14 @@ button {
   transition: .16s ease;
 }
 
-button:hover { background: #311422; border-color: rgba(255, 122, 152, .6); }
+button:hover { background: #262025; border-color: rgba(180, 120, 140, .6); }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   border-color: transparent;
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 8px 18px rgba(255, 62, 112, .28);
+  box-shadow: 0 8px 16px rgba(125, 46, 70, .34);
 }
 
 .profile-actions {
@@ -145,9 +158,10 @@ button:hover { background: #311422; border-color: rgba(255, 122, 152, .6); }
 .danger-soft { border-color: rgba(255, 98, 130, .55); color: #ff7a97; background: #2a121c; }
 
 .fixed-room .room-fixed-name {
-  font-size: 42px;
+  font-size: 34px;
   font-weight: 800;
-  line-height: 1.05;
+  line-height: 1.08;
+  letter-spacing: -.3px;
 }
 
 .list-title { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
@@ -198,11 +212,15 @@ button:hover { background: #311422; border-color: rgba(255, 122, 152, .6); }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 3px;
+  padding: 8px 8px;
   border-radius: 8px;
+  border: 1px solid transparent;
 }
 
-.online-user:hover { background: #1d2b4a6e; }
+.online-user:hover {
+  background: #2a2127;
+  border-color: rgba(176, 126, 143, .4);
+}
 
 .user-dot {
   width: 9px;
@@ -248,8 +266,8 @@ button:hover { background: #311422; border-color: rgba(255, 122, 152, .6); }
   align-items: flex-start;
   gap: 10px;
   background:
-    radial-gradient(760px 320px at 100% 0%, #ff4f7f1e 0%, transparent 72%),
-    linear-gradient(180deg, #161018, #120d14);
+    radial-gradient(760px 320px at 100% 0%, #7a3d5214 0%, transparent 72%),
+    linear-gradient(180deg, #161317, #121014);
 }
 
 .message {
