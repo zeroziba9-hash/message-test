@@ -1,7 +1,16 @@
 package message.chat;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class ChatSendRequest {
+
+    @NotBlank(message = "보내는 사람은 필수입니다.")
+    @Size(max = 30, message = "보내는 사람 이름은 30자를 넘을 수 없습니다.")
     private String sender;
+
+    @NotBlank(message = "메시지 내용은 필수입니다.")
+    @Size(max = 500, message = "메시지는 500자 이하여야 합니다.")
     private String content;
 
     public ChatSendRequest() {
