@@ -109,8 +109,13 @@
     let selectedMessage = null;
     let selectedUser = null;
     let dragChannel = null;
-    let currentNickname = localStorage.getItem("chat.nickname") || "사용자1";
 
+    const storedNickname = sessionStorage.getItem("chat.nickname")
+      || localStorage.getItem("chat.nickname")
+      || "사용자1";
+    sessionStorage.setItem("chat.nickname", storedNickname);
+
+    let currentNickname = storedNickname;
     applyNickname(currentNickname);
 
     document.getElementById("sendBtn").addEventListener("click", sendMsg);
@@ -417,14 +422,15 @@
       const next = prompt("새 닉네임을 입력하세요.", sender());
       if (!next || !next.trim()) return;
       applyNickname(next);
-      localStorage.setItem("chat.nickname", sender());
+      sessionStorage.setItem("chat.nickname", sender());
       refreshAccess();
       loadOnlineUsers();
       showToast("닉네임이 변경되었습니다.");
     }
 
     function logout() {
-      localStorage.removeItem("chat.nickname");
+      sessionStorage.removeItem("chat.nickname");
+      sessionStorage.removeItem("chat.username");
       window.location.href = "/login.html";
     }
 
