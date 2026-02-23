@@ -1,90 +1,478 @@
 <!doctype html>
-<html>
+<html lang="ko">
 
 <head>
     <meta charset="utf-8" />
-    <title>WS Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Realtime Chat Console</title>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #171a21;
+            --panel-2: #1d2230;
+            --line: #2b3243;
+            --text: #e7edf7;
+            --muted: #9aa7bd;
+            --accent: #5b8cff;
+            --accent-2: #3c6bda;
+            --ok: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(circle at top right, #1d2640 0, var(--bg) 35%);
+            color: var(--text);
+            font: 14px/1.5 Inter, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .app {
+            width: min(1100px, 100%);
+            height: min(780px, calc(100vh - 48px));
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            background: var(--panel);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .4);
+        }
+
+        .sidebar {
+            background: #141924;
+            border-right: 1px solid var(--line);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .brand {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--line);
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        .section {
+            padding: 12px 12px 10px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        input,
+        button,
+        textarea {
+            font: inherit;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            background: #101522;
+            color: var(--text);
+            border-radius: 8px;
+            padding: 9px 10px;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(91, 140, 255, .15);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        button {
+            border: 1px solid var(--line);
+            background: #1a2131;
+            color: var(--text);
+            border-radius: 8px;
+            padding: 9px 10px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #222d43;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-2);
+        }
+
+        .channels {
+            padding: 10px;
+            overflow: auto;
+            min-height: 0;
+        }
+
+        .channel-item {
+            width: 100%;
+            text-align: left;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--muted);
+        }
+
+        .channel-item:hover {
+            color: var(--text);
+            background: #1c2436;
+            border-color: var(--line);
+        }
+
+        .channel-item.active {
+            color: #fff;
+            background: #223154;
+            border-color: #35508e;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .topbar {
+            height: 62px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            background: var(--panel-2);
+            gap: 10px;
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .status {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--danger);
+            box-shadow: 0 0 0 5px rgba(239, 68, 68, .15);
+        }
+
+        .dot.ok {
+            background: var(--ok);
+            box-shadow: 0 0 0 5px rgba(34, 197, 94, .16);
+        }
+
+        .messages {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+            background: linear-gradient(180deg, #151c2a 0, #141924 100%);
+        }
+
+        .message {
+            margin-bottom: 12px;
+            max-width: 80%;
+            padding: 10px 12px;
+            border: 1px solid #2d3548;
+            border-radius: 12px;
+            background: #1a2335;
+        }
+
+        .message.mine {
+            margin-left: auto;
+            background: #1d3263;
+            border-color: #35508e;
+        }
+
+        .meta {
+            font-size: 12px;
+            color: #b8c4d8;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .content {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .composer {
+            border-top: 1px solid var(--line);
+            padding: 12px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            background: #131a27;
+        }
+
+        .composer textarea {
+            min-height: 52px;
+            max-height: 180px;
+            resize: vertical;
+            line-height: 1.4;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+
+        @media (max-width: 900px) {
+            .app {
+                grid-template-columns: 1fr;
+                height: calc(100vh - 24px);
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            body {
+                padding: 12px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <h2>WebSocket Chat Test</h2>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand">Realtime Chat Console</div>
 
-    <div>
-        <label>Channel ID:</label>
-        <input id="channel" value="1" />
-        <button onclick="connect()">Connect</button>
-        <button onclick="loadHistory()">Load History</button>
-        <button onclick="loadChannels()">List Channels</button>
+            <div class="section">
+                <label class="label" for="sender">Sender</label>
+                <input id="sender" value="zeroziba" />
+            </div>
+
+            <div class="section">
+                <label class="label" for="channel">Channel ID</label>
+                <div class="row">
+                    <input id="channel" value="general" />
+                    <button id="connectBtn" class="btn-primary">Connect</button>
+                </div>
+                <div class="hint">/sub/channels/{id} 에 구독됨</div>
+            </div>
+
+            <div class="section" style="display:grid; gap:8px;">
+                <button id="historyBtn">Load History</button>
+                <button id="channelsBtn">Refresh Channels</button>
+            </div>
+
+            <div class="channels" id="channelList"></div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <h1 id="roomTitle"># general</h1>
+                <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">DISCONNECTED</span></div>
+            </header>
+
+            <section class="messages" id="messages"></section>
+
+            <footer class="composer">
+                <div>
+                    <textarea id="content" placeholder="메시지를 입력하세요. Enter 전송 / Shift+Enter 줄바꿈"></textarea>
+                    <div class="hint">Enter: 전송 · Shift+Enter: 줄바꿈</div>
+                </div>
+                <button id="sendBtn" class="btn-primary">Send</button>
+            </footer>
+        </main>
     </div>
-
-    <div style="margin-top: 12px;">
-        <label>Sender:</label>
-        <input id="sender" value="zeroziba" />
-        <label>Message:</label>
-        <input id="content" />
-        <button onclick="sendMsg()">Send</button>
-    </div>
-
-    <pre id="log" style="margin-top: 12px; border: 1px solid #444; padding: 8px; height: 260px; overflow:auto;"></pre>
 
     <script>
         let stompClient = null;
-        let channelId = "1";
+        let currentChannel = "general";
 
-        function log(msg) {
-            const el = document.getElementById("log");
-            el.textContent += msg + "\n";
-            el.scrollTop = el.scrollHeight;
+        const senderEl = document.getElementById("sender");
+        const channelEl = document.getElementById("channel");
+        const contentEl = document.getElementById("content");
+        const messagesEl = document.getElementById("messages");
+        const roomTitleEl = document.getElementById("roomTitle");
+        const statusTextEl = document.getElementById("statusText");
+        const statusDotEl = document.getElementById("statusDot");
+        const channelListEl = document.getElementById("channelList");
+
+        document.getElementById("connectBtn").addEventListener("click", connect);
+        document.getElementById("historyBtn").addEventListener("click", loadHistory);
+        document.getElementById("channelsBtn").addEventListener("click", loadChannels);
+        document.getElementById("sendBtn").addEventListener("click", sendMsg);
+
+        contentEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMsg();
+            }
+        });
+
+        function setStatus(connected) {
+            statusTextEl.textContent = connected ? "CONNECTED" : "DISCONNECTED";
+            statusDotEl.classList.toggle("ok", connected);
         }
 
         function getChannelId() {
-            return document.getElementById("channel").value.trim();
+            const id = channelEl.value.trim();
+            return id || "general";
+        }
+
+        function renderMessage(msg, mine = false) {
+            const wrap = document.createElement("article");
+            wrap.className = "message" + (mine ? " mine" : "");
+
+            const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : "-";
+            wrap.innerHTML = `
+                <div class="meta">
+                    <strong>${escapeHtml(msg.sender || "unknown")}</strong>
+                    <span>${escapeHtml(sentAt)}</span>
+                </div>
+                <div class="content">${escapeHtml(msg.content || "")}</div>
+            `;
+
+            messagesEl.appendChild(wrap);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function clearMessages() {
+            messagesEl.innerHTML = "";
+        }
+
+        function updateRoomTitle() {
+            roomTitleEl.textContent = `# ${currentChannel}`;
+            channelEl.value = currentChannel;
         }
 
         function connect() {
-            channelId = getChannelId();
+            currentChannel = getChannelId();
+            updateRoomTitle();
+
+            if (stompClient && stompClient.connected) {
+                stompClient.disconnect(() => setStatus(false));
+            }
+
             const socket = new SockJS("/ws");
             stompClient = Stomp.over(socket);
-            stompClient.connect({}, function () {
-                log("CONNECTED channel=" + channelId);
-                stompClient.subscribe("/sub/channels/" + channelId, function (frame) {
-                    log("RECV: " + frame.body);
+            stompClient.debug = null;
+
+            stompClient.connect({}, () => {
+                setStatus(true);
+                stompClient.subscribe(`/sub/channels/${currentChannel}`, (frame) => {
+                    const msg = JSON.parse(frame.body);
+                    const mine = (msg.sender || "") === senderEl.value.trim();
+                    renderMessage(msg, mine);
                 });
+                loadHistory();
+                loadChannels();
+            }, () => {
+                setStatus(false);
             });
         }
 
         function sendMsg() {
-            if (!stompClient) {
-                alert("먼저 connect 하셈");
+            if (!stompClient || !stompClient.connected) {
+                alert("먼저 Connect 해줘.");
                 return;
             }
-            channelId = getChannelId();
-            const sender = document.getElementById("sender").value;
-            const content = document.getElementById("content").value;
 
-            stompClient.send("/pub/channels/" + channelId, {}, JSON.stringify({
-                sender, content
-            }));
+            const sender = senderEl.value.trim();
+            const content = contentEl.value.trim();
+            if (!sender || !content) return;
 
-            document.getElementById("content").value = "";
+            stompClient.send(`/pub/channels/${currentChannel}`, {}, JSON.stringify({ sender, content }));
+            contentEl.value = "";
+            contentEl.focus();
         }
 
         async function loadHistory() {
-            channelId = getChannelId();
-            const res = await fetch(`/api/channels/${channelId}/messages?limit=50`);
-            const data = await res.json();
-            log("--- HISTORY ---");
-            data.forEach(m => log(JSON.stringify(m)));
-            log("--- END HISTORY ---");
+            try {
+                const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages?limit=50`);
+                if (!res.ok) throw new Error("history load failed");
+                const data = await res.json();
+                clearMessages();
+                data.forEach(msg => {
+                    const mine = (msg.sender || "") === senderEl.value.trim();
+                    renderMessage(msg, mine);
+                });
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         async function loadChannels() {
-            const res = await fetch('/api/channels');
-            const data = await res.json();
-            log("CHANNELS: " + JSON.stringify(data));
+            try {
+                const res = await fetch('/api/channels');
+                if (!res.ok) throw new Error("channels load failed");
+                const channels = await res.json();
+
+                channelListEl.innerHTML = "";
+                const uniq = new Set([currentChannel, ...channels]);
+
+                [...uniq].sort().forEach(ch => {
+                    const btn = document.createElement("button");
+                    btn.className = "channel-item" + (ch === currentChannel ? " active" : "");
+                    btn.textContent = `# ${ch}`;
+                    btn.onclick = () => {
+                        currentChannel = ch;
+                        updateRoomTitle();
+                        connect();
+                    };
+                    channelListEl.appendChild(btn);
+                });
+            } catch (e) {
+                console.error(e);
+            }
         }
+
+        function escapeHtml(str) {
+            return str
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        updateRoomTitle();
+        loadChannels();
     </script>
 </body>
 
