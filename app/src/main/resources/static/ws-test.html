@@ -125,6 +125,7 @@
 
     let currentNickname = storedNickname;
     applyNickname(currentNickname);
+    loadSeenState();
 
     document.getElementById("sendBtn").addEventListener("click", sendMsg);
     document.getElementById("addChannelBtn").addEventListener("click", addChannel);
@@ -219,9 +220,46 @@
 
     function clearMessages() { messagesEl.innerHTML = ""; }
 
+    function seenStorageKey() {
+      return `chat.seen.${sender() || "anonymous"}`;
+    }
+
+    function loadSeenState() {
+      try {
+        const raw = sessionStorage.getItem(seenStorageKey());
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        Object.entries(data || {}).forEach(([channelId, seenId]) => {
+          const n = Number(seenId || 0);
+          if (n > 0) lastSeenMessageId.set(channelId, n);
+        });
+      } catch {
+        // ignore corrupted seen state
+      }
+    }
+
+    function saveSeenState() {
+      try {
+        const obj = Object.fromEntries(lastSeenMessageId.entries());
+        sessionStorage.setItem(seenStorageKey(), JSON.stringify(obj));
+      } catch {
+        // ignore storage errors
+      }
+    }
+
+    function setSeen(channelId, messageId) {
+      const id = Number(messageId || 0);
+      if (id <= 0) return;
+      const prev = Number(lastSeenMessageId.get(channelId) || 0);
+      if (id >= prev) {
+        lastSeenMessageId.set(channelId, id);
+        saveSeenState();
+      }
+    }
+
     function markChannelSeen(channelId, messages) {
       const maxId = (messages || []).reduce((max, m) => Math.max(max, Number(m.id || 0)), 0);
-      if (maxId > 0) lastSeenMessageId.set(channelId, maxId);
+      setSeen(channelId, maxId);
       unreadCounts.set(channelId, 0);
     }
 
@@ -304,7 +342,7 @@
           const msg = JSON.parse(frame.body);
           const mine = (msg.sender || "") === sender();
           renderMessage(msg, mine);
-          if (msg?.id) lastSeenMessageId.set(currentChannel, Number(msg.id));
+          if (msg?.id) setSeen(currentChannel, Number(msg.id));
         });
 
         stompClient.subscribe(`/sub/channels/${currentChannel}/presence`, (frame) => {
@@ -491,12 +529,19 @@
       if (!next || !next.trim()) return;
       applyNickname(next);
       sessionStorage.setItem("chat.nickname", sender());
+
+      lastSeenMessageId.clear();
+      unreadCounts.clear();
+      loadSeenState();
+
       refreshAccess();
       loadOnlineUsers();
+      loadChannels();
       showToast("닉네임이 변경되었습니다.");
     }
 
     function logout() {
+      sessionStorage.removeItem(seenStorageKey());
       sessionStorage.removeItem("chat.nickname");
       sessionStorage.removeItem("chat.username");
       window.location.href = "/login.html";
