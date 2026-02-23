@@ -18,6 +18,7 @@
             <div class="section">
                 <label class="label" for="sender">내 닉네임</label>
                 <input id="sender" value="사용자1" />
+                <div class="hint" id="roleLabel">역할: MEMBER</div>
             </div>
 
             <div class="section">
@@ -26,12 +27,34 @@
                     <input id="channel" value="general" />
                     <button id="connectBtn" class="btn-primary">입장</button>
                 </div>
-                <div class="hint">엔터로 메시지 전송 가능</div>
+                <div class="hint" id="permLabel">권한: 읽기 가능 / 쓰기 가능</div>
             </div>
 
             <div class="section action-buttons">
                 <button id="historyBtn">대화 기록</button>
                 <button id="channelsBtn">채널 새로고침</button>
+            </div>
+
+            <div class="section action-buttons">
+                <div class="list-title">권한 관리(테스트용)</div>
+                <input id="adminTargetUser" placeholder="대상 사용자" value="사용자1" />
+                <select id="adminRole">
+                    <option>ADMIN</option>
+                    <option>MODERATOR</option>
+                    <option selected>MEMBER</option>
+                    <option>GUEST</option>
+                </select>
+                <button id="setRoleBtn">사용자 역할 변경</button>
+
+                <select id="permRole">
+                    <option>ADMIN</option>
+                    <option>MODERATOR</option>
+                    <option selected>MEMBER</option>
+                    <option>GUEST</option>
+                </select>
+                <label class="checkbox"><input type="checkbox" id="canRead" checked />읽기</label>
+                <label class="checkbox"><input type="checkbox" id="canWrite" checked />쓰기</label>
+                <button id="setPermBtn">채널 권한 변경</button>
             </div>
 
             <div class="section list-section">
@@ -77,11 +100,15 @@
         const channelListEl = document.getElementById("channelList");
         const onlineUsersEl = document.getElementById("onlineUsers");
         const onlineCountEl = document.getElementById("onlineCount");
+        const roleLabelEl = document.getElementById("roleLabel");
+        const permLabelEl = document.getElementById("permLabel");
 
         document.getElementById("connectBtn").addEventListener("click", connect);
         document.getElementById("historyBtn").addEventListener("click", loadHistory);
         document.getElementById("channelsBtn").addEventListener("click", loadChannels);
         document.getElementById("sendBtn").addEventListener("click", sendMsg);
+        document.getElementById("setRoleBtn").addEventListener("click", setUserRole);
+        document.getElementById("setPermBtn").addEventListener("click", setChannelPermission);
 
         contentEl.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -89,6 +116,8 @@
                 sendMsg();
             }
         });
+
+        function sender() { return senderEl.value.trim(); }
 
         function setStatus(connected) {
             statusTextEl.textContent = connected ? "연결됨" : "연결 끊김";
@@ -147,6 +176,20 @@
             });
         }
 
+        async function refreshAccess() {
+            try {
+                const res = await fetch(`/api/access/${encodeURIComponent(currentChannel)}?sender=${encodeURIComponent(sender())}`);
+                if (!res.ok) return;
+                const access = await res.json();
+                roleLabelEl.textContent = `역할: ${access.role}`;
+                permLabelEl.textContent = `권한: ${access.canRead ? "읽기 가능" : "읽기 불가"} / ${access.canWrite ? "쓰기 가능" : "쓰기 불가"}`;
+                document.getElementById("canRead").checked = access.canRead;
+                document.getElementById("canWrite").checked = access.canWrite;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         function connect() {
             currentChannel = getChannelId();
             updateRoomTitle();
@@ -159,12 +202,12 @@
             stompClient = Stomp.over(socket);
             stompClient.debug = null;
 
-            stompClient.connect({}, () => {
+            stompClient.connect({}, async () => {
                 setStatus(true);
 
                 stompClient.subscribe(`/sub/channels/${currentChannel}`, (frame) => {
                     const msg = JSON.parse(frame.body);
-                    const mine = (msg.sender || "") === senderEl.value.trim();
+                    const mine = (msg.sender || "") === sender();
                     renderMessage(msg, mine);
                 });
 
@@ -172,12 +215,9 @@
                     renderPresence(JSON.parse(frame.body));
                 });
 
-                // 입장 이벤트 전송
-                stompClient.send(`/pub/channels/${currentChannel}/join`, {}, JSON.stringify({
-                    sender: senderEl.value.trim(),
-                    content: ""
-                }));
+                stompClient.send(`/pub/channels/${currentChannel}/join`, {}, JSON.stringify({ sender: sender(), content: "" }));
 
+                await refreshAccess();
                 loadHistory();
                 loadChannels();
                 loadOnlineUsers();
@@ -186,29 +226,39 @@
             });
         }
 
-        function sendMsg() {
+        async function sendMsg() {
             if (!stompClient || !stompClient.connected) {
                 alert("먼저 채널에 입장해 주세요.");
                 return;
             }
 
-            const sender = senderEl.value.trim();
             const content = contentEl.value.trim();
-            if (!sender || !content) return;
+            if (!sender() || !content) return;
 
-            stompClient.send(`/pub/channels/${currentChannel}`, {}, JSON.stringify({ sender, content }));
+            await refreshAccess();
+            if (!permLabelEl.textContent.includes("쓰기 가능")) {
+                alert("이 채널에 쓰기 권한이 없습니다.");
+                return;
+            }
+
+            stompClient.send(`/pub/channels/${currentChannel}`, {}, JSON.stringify({ sender: sender(), content }));
             contentEl.value = "";
             contentEl.focus();
         }
 
         async function loadHistory() {
             try {
-                const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages?limit=50`);
+                const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages?sender=${encodeURIComponent(sender())}&limit=50`);
+                if (res.status === 403) {
+                    clearMessages();
+                    renderMessage({ sender: "시스템", content: "읽기 권한이 없어 대화 기록을 볼 수 없습니다.", sentAt: new Date() }, false);
+                    return;
+                }
                 if (!res.ok) throw new Error("history load failed");
                 const data = await res.json();
                 clearMessages();
                 data.forEach(msg => {
-                    const mine = (msg.sender || "") === senderEl.value.trim();
+                    const mine = (msg.sender || "") === sender();
                     renderMessage(msg, mine);
                 });
             } catch (e) {
@@ -243,7 +293,11 @@
 
         async function loadOnlineUsers() {
             try {
-                const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/online-users`);
+                const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/online-users?sender=${encodeURIComponent(sender())}`);
+                if (res.status === 403) {
+                    renderPresence({ users: [], onlineCount: 0 });
+                    return;
+                }
                 if (!res.ok) throw new Error("online users load failed");
                 const data = await res.json();
                 renderPresence(data);
@@ -252,8 +306,34 @@
             }
         }
 
+        async function setUserRole() {
+            const target = document.getElementById("adminTargetUser").value.trim();
+            const role = document.getElementById("adminRole").value;
+            if (!target) return;
+            const res = await fetch(`/api/admin/users/${encodeURIComponent(target)}/role?role=${encodeURIComponent(role)}`, { method: "POST" });
+            if (!res.ok) {
+                alert("역할 변경 실패");
+                return;
+            }
+            await refreshAccess();
+            loadOnlineUsers();
+        }
+
+        async function setChannelPermission() {
+            const role = document.getElementById("permRole").value;
+            const canRead = document.getElementById("canRead").checked;
+            const canWrite = document.getElementById("canWrite").checked;
+
+            const res = await fetch(`/api/admin/channels/${encodeURIComponent(currentChannel)}/permissions?role=${encodeURIComponent(role)}&canRead=${canRead}&canWrite=${canWrite}`, { method: "POST" });
+            if (!res.ok) {
+                alert("채널 권한 변경 실패");
+                return;
+            }
+            await refreshAccess();
+        }
+
         function escapeHtml(str) {
-            return str
+            return String(str)
                 .replaceAll('&', '&amp;')
                 .replaceAll('<', '&lt;')
                 .replaceAll('>', '&gt;')
@@ -263,6 +343,7 @@
 
         updateRoomTitle();
         loadChannels();
+        refreshAccess();
         loadOnlineUsers();
     </script>
 </body>

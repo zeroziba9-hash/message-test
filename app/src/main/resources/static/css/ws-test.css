@@ -58,9 +58,9 @@ body {
 
 .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: block; }
 
-input, button, textarea { font: inherit; }
+input, button, textarea, select { font: inherit; }
 
-input, textarea {
+input, textarea, select {
     width: 100%;
     border: 1px solid var(--line);
     background: #101522;
@@ -70,7 +70,7 @@ input, textarea {
     outline: none;
 }
 
-input:focus, textarea:focus {
+input:focus, textarea:focus, select:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(91, 140, 255, .15);
 }
@@ -96,6 +96,8 @@ button:hover { background: #222d43; }
 .btn-primary:hover { background: var(--accent-2); }
 
 .action-buttons { display: grid; gap: 8px; }
+.checkbox { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.checkbox input { width: auto; }
 .list-section { min-height: 0; }
 .list-title { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 
@@ -173,18 +175,23 @@ button:hover { background: #222d43; }
     overflow: auto;
     padding: 16px;
     background: linear-gradient(180deg, #151c2a 0, #141924 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
 }
 
 .message {
-    margin-bottom: 12px;
-    max-width: 80%;
+    margin-bottom: 0;
+    width: fit-content;
+    max-width: 68%;
     padding: 10px 12px;
     border: 1px solid #2d3548;
     border-radius: 12px;
     background: #1a2335;
 }
 .message.mine {
-    margin-left: auto;
+    align-self: flex-end;
     background: #1d3263;
     border-color: #35508e;
 }
@@ -218,5 +225,6 @@ button:hover { background: #222d43; }
 @media (max-width: 900px) {
     .app { grid-template-columns: 1fr; height: calc(100vh - 24px); }
     .sidebar { display: none; }
+    .message { max-width: 85%; }
     body { padding: 12px; }
 }
