@@ -35,8 +35,8 @@
                 <button id="channelsBtn">채널 새로고침</button>
             </div>
 
-            <div class="section action-buttons">
-                <div class="list-title">권한 관리(테스트용)</div>
+            <div class="section action-buttons admin-panel hidden" id="adminPanel">
+                <div class="list-title">관리자 메뉴</div>
                 <input id="adminTargetUser" placeholder="대상 사용자" value="사용자1" />
                 <select id="adminRole">
                     <option>ADMIN</option>
@@ -55,6 +55,7 @@
                 <label class="checkbox"><input type="checkbox" id="canRead" checked />읽기</label>
                 <label class="checkbox"><input type="checkbox" id="canWrite" checked />쓰기</label>
                 <button id="setPermBtn">채널 권한 변경</button>
+                <div class="hint">메시지 우클릭 시 수정/삭제 메뉴가 열립니다.</div>
             </div>
 
             <div class="section list-section">
@@ -86,6 +87,11 @@
         </main>
     </div>
 
+    <div id="messageContextMenu" class="message-menu hidden">
+        <button data-action="edit">메시지 수정</button>
+        <button data-action="delete" class="danger">메시지 삭제</button>
+    </div>
+
     <script>
         let stompClient = null;
         let currentChannel = "general";
@@ -102,6 +108,11 @@
         const onlineCountEl = document.getElementById("onlineCount");
         const roleLabelEl = document.getElementById("roleLabel");
         const permLabelEl = document.getElementById("permLabel");
+        const adminPanelEl = document.getElementById("adminPanel");
+        const messageMenuEl = document.getElementById("messageContextMenu");
+
+        let currentRole = "MEMBER";
+        let selectedMessageId = null;
 
         const savedNickname = localStorage.getItem('chat.nickname');
         if (savedNickname) senderEl.value = savedNickname;
@@ -112,6 +123,9 @@
         document.getElementById("sendBtn").addEventListener("click", sendMsg);
         document.getElementById("setRoleBtn").addEventListener("click", setUserRole);
         document.getElementById("setPermBtn").addEventListener("click", setChannelPermission);
+        messageMenuEl.addEventListener("click", onMessageMenuClick);
+
+        document.addEventListener("click", () => hideMessageMenu());
 
         contentEl.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -145,6 +159,8 @@
         function renderMessage(msg, mine = false) {
             const wrap = document.createElement("article");
             wrap.className = "message" + (mine ? " mine" : "");
+            if (msg.id) wrap.dataset.messageId = String(msg.id);
+
             const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : new Date().toLocaleTimeString();
             wrap.innerHTML = `
                 <div class="meta">
@@ -153,6 +169,13 @@
                 </div>
                 <div class="content">${escapeHtml(msg.content || "")}</div>
             `;
+
+            wrap.addEventListener("contextmenu", (event) => {
+                if (currentRole !== "ADMIN" || !msg.id) return;
+                event.preventDefault();
+                openMessageMenu(msg.id, event.clientX, event.clientY);
+            });
+
             messagesEl.appendChild(wrap);
             messagesEl.scrollTop = messagesEl.scrollHeight;
         }
@@ -197,10 +220,12 @@
                 const res = await fetch(`/api/access/${encodeURIComponent(currentChannel)}?sender=${encodeURIComponent(sender())}`);
                 if (!res.ok) return;
                 const access = await res.json();
-                roleLabelEl.textContent = `역할: ${access.role}`;
+                currentRole = access.role || "MEMBER";
+                roleLabelEl.textContent = `역할: ${currentRole}`;
                 permLabelEl.textContent = `권한: ${access.canRead ? "읽기 가능" : "읽기 불가"} / ${access.canWrite ? "쓰기 가능" : "쓰기 불가"}`;
                 document.getElementById("canRead").checked = access.canRead;
                 document.getElementById("canWrite").checked = access.canWrite;
+                adminPanelEl.classList.toggle("hidden", currentRole !== "ADMIN");
             } catch {
                 // ignore
             }
@@ -328,7 +353,7 @@
             const role = document.getElementById("adminRole").value;
             if (!target) return;
 
-            const res = await fetch(`/api/admin/users/${encodeURIComponent(target)}/role?role=${encodeURIComponent(role)}`, { method: "POST" });
+            const res = await fetch(`/api/admin/users/${encodeURIComponent(target)}/role?actor=${encodeURIComponent(sender())}&role=${encodeURIComponent(role)}`, { method: "POST" });
             if (!res.ok) {
                 showToast("역할 변경 실패");
                 return;
@@ -343,7 +368,7 @@
             const canRead = document.getElementById("canRead").checked;
             const canWrite = document.getElementById("canWrite").checked;
 
-            const res = await fetch(`/api/admin/channels/${encodeURIComponent(currentChannel)}/permissions?role=${encodeURIComponent(role)}&canRead=${canRead}&canWrite=${canWrite}`, { method: "POST" });
+            const res = await fetch(`/api/admin/channels/${encodeURIComponent(currentChannel)}/permissions?sender=${encodeURIComponent(sender())}&role=${encodeURIComponent(role)}&canRead=${canRead}&canWrite=${canWrite}`, { method: "POST" });
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 showToast(extractErrorMessage(errorData, '채널 권한 변경 실패'));
@@ -351,6 +376,71 @@
             }
             showToast(`${role} 권한 변경 완료`);
             await refreshAccess();
+        }
+
+        function openMessageMenu(messageId, x, y) {
+            selectedMessageId = messageId;
+            messageMenuEl.style.left = `${x}px`;
+            messageMenuEl.style.top = `${y}px`;
+            messageMenuEl.classList.remove("hidden");
+        }
+
+        function hideMessageMenu() {
+            messageMenuEl.classList.add("hidden");
+            selectedMessageId = null;
+        }
+
+        async function onMessageMenuClick(event) {
+            const action = event.target?.dataset?.action;
+            if (!action || !selectedMessageId) return;
+
+            if (action === "edit") {
+                const next = prompt("수정할 메시지 내용을 입력하세요.");
+                if (!next || !next.trim()) {
+                    hideMessageMenu();
+                    return;
+                }
+
+                const res = await fetch(`/api/admin/channels/${encodeURIComponent(currentChannel)}/messages/${selectedMessageId}?sender=${encodeURIComponent(sender())}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ content: next.trim() })
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    showToast(extractErrorMessage(errorData, "메시지 수정 실패"));
+                    hideMessageMenu();
+                    return;
+                }
+
+                showToast("메시지 수정 완료");
+                await loadHistory();
+            }
+
+            if (action === "delete") {
+                const ok = confirm(`메시지 #${selectedMessageId}를 삭제할까요?`);
+                if (!ok) {
+                    hideMessageMenu();
+                    return;
+                }
+
+                const res = await fetch(`/api/admin/channels/${encodeURIComponent(currentChannel)}/messages/${selectedMessageId}?sender=${encodeURIComponent(sender())}`, {
+                    method: "DELETE"
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    showToast(extractErrorMessage(errorData, "메시지 삭제 실패"));
+                    hideMessageMenu();
+                    return;
+                }
+
+                showToast("메시지 삭제 완료");
+                await loadHistory();
+            }
+
+            hideMessageMenu();
         }
 
         function escapeHtml(str) {

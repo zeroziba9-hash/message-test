@@ -119,6 +119,12 @@ button:hover { transform: translateY(-1px); background: #243456; }
 }
 
 .action-buttons { display: grid; gap: 8px; }
+.admin-panel {
+    background: linear-gradient(180deg, #121a30, #101728);
+    border-top: 1px solid #90a5e530;
+    box-shadow: inset 0 0 0 1px #6a88da1f;
+}
+.hidden { display: none !important; }
 .checkbox { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .checkbox input { width: auto; }
 
@@ -256,6 +262,36 @@ button:hover { transform: translateY(-1px); background: #243456; }
     animation: popIn .25s ease;
     z-index: 99;
 }
+
+.message-menu {
+    position: fixed;
+    z-index: 120;
+    min-width: 150px;
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid #88a4ec5f;
+    background: #0f1830;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .45);
+    display: grid;
+    gap: 4px;
+}
+
+.message-menu button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    padding: 8px 10px;
+    color: #d9e7ff;
+    border-radius: 8px;
+}
+
+.message-menu button:hover {
+    transform: none;
+    background: #24355f;
+}
+
+.message-menu .danger { color: #ff9aaf; }
 
 @keyframes popIn {
     from { transform: translateY(8px) scale(.98); opacity: 0; }

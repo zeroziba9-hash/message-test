@@ -12,8 +12,10 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -104,16 +106,54 @@ public class ChatController {
     @PostMapping("/api/admin/users/{sender}/role")
     public AccessSummary setUserRole(
             @PathVariable String sender,
+            @RequestParam @NotBlank(message = "actor는 필수입니다.") String actor,
             @RequestParam @NotBlank(message = "role은 필수입니다.") String role) {
+        requireAdmin(actor, "general");
         return accessControlService.setUserRole(sender, role);
     }
 
     @PostMapping("/api/admin/channels/{channelId}/permissions")
     public ChannelPermission setChannelPermission(
             @PathVariable String channelId,
+            @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
             @RequestParam @NotBlank(message = "role은 필수입니다.") String role,
             @RequestParam boolean canRead,
             @RequestParam boolean canWrite) {
+        requireAdmin(sender, channelId);
         return accessControlService.setChannelPermission(channelId, role, canRead, canWrite);
     }
+
+    @PutMapping("/api/admin/channels/{channelId}/messages/{messageId}")
+    public ChatMessage updateMessage(
+            @PathVariable String channelId,
+            @PathVariable long messageId,
+            @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
+            @Valid @RequestBody MessageUpdateRequest request) {
+        requireAdmin(sender, channelId);
+
+        ChatMessage updated = chatService.updateMessage(channelId, messageId, request.getContent());
+        messagingTemplate.convertAndSend("/sub/channels/" + channelId, updated);
+        return updated;
+    }
+
+    @DeleteMapping("/api/admin/channels/{channelId}/messages/{messageId}")
+    public void deleteMessage(
+            @PathVariable String channelId,
+            @PathVariable long messageId,
+            @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender) {
+        requireAdmin(sender, channelId);
+
+        chatService.deleteMessage(channelId, messageId);
+        messagingTemplate.convertAndSend(
+                "/sub/channels/" + channelId,
+                new ChatMessage(0, channelId, "시스템", "메시지 #" + messageId + " 이(가) 관리자에 의해 삭제되었습니다.", null));
+    }
+
+    private void requireAdmin(String sender, String channelId) {
+        var access = accessControlService.getSummary(sender, channelId);
+        if (access.getRole() != ChatRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자만 수행할 수 있습니다");
+        }
+    }
 }
+
