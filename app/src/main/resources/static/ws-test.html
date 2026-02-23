@@ -57,7 +57,11 @@
       <footer class="composer">
         <div>
           <textarea id="content" placeholder="메시지를 입력하세요 (Enter 전송 / Shift+Enter 줄바꿈)"></textarea>
-          <div class="hint">Enter: 전송 · Shift+Enter: 줄바꿈</div>
+          <div class="composer-tools">
+            <button id="imageBtn" class="icon-btn" title="이미지 업로드" type="button">🖼️</button>
+            <span class="hint">Enter: 전송 · Shift+Enter: 줄바꿈</span>
+          </div>
+          <input id="imageInput" type="file" accept="image/*" class="hidden" />
         </div>
         <button id="sendBtn" class="btn-primary">전송</button>
       </footer>
@@ -104,6 +108,8 @@
     const newChannelNameEl = document.getElementById("newChannelName");
     const messageMenuEl = document.getElementById("messageContextMenu");
     const userMenuEl = document.getElementById("userContextMenu");
+    const imageBtnEl = document.getElementById("imageBtn");
+    const imageInputEl = document.getElementById("imageInput");
 
     let currentRole = "MEMBER";
     let selectedMessage = null;
@@ -122,6 +128,8 @@
     document.getElementById("addChannelBtn").addEventListener("click", addChannel);
     document.getElementById("editProfileBtn").addEventListener("click", editProfile);
     document.getElementById("logoutBtn").addEventListener("click", logout);
+    imageBtnEl.addEventListener("click", () => imageInputEl.click());
+    imageInputEl.addEventListener("change", onImageSelected);
     manageModeEl.addEventListener("change", loadChannels);
     messageMenuEl.addEventListener("click", onMessageMenuClick);
     userMenuEl.addEventListener("click", onUserMenuClick);
@@ -167,13 +175,26 @@
       if (msg.id) wrap.dataset.messageId = String(msg.id);
 
       const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : new Date().toLocaleTimeString();
+      const rawContent = msg.content || "";
+      const imageUrl = extractImageUrl(rawContent);
+      const textOnly = imageUrl ? "" : escapeHtml(rawContent);
+
       wrap.innerHTML = `
         <div class="meta">
           <strong class="sender">${escapeHtml(msg.sender || "알수없음")}</strong>
           <span>${escapeHtml(sentAt)}</span>
         </div>
-        <div class="content">${escapeHtml(msg.content || "")}</div>
+        <div class="content">${textOnly}</div>
       `;
+
+      if (imageUrl) {
+        const img = document.createElement("img");
+        img.className = "chat-image";
+        img.src = imageUrl;
+        img.alt = "업로드 이미지";
+        img.loading = "lazy";
+        wrap.querySelector(".content")?.appendChild(img);
+      }
 
       wrap.addEventListener("contextmenu", (event) => {
         if (canManageMessage(msg)) {
@@ -506,6 +527,56 @@
       await refreshAccess();
       await loadOnlineUsers();
       hideMenus();
+    }
+
+    async function onImageSelected(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        showToast("이미지 파일만 업로드할 수 있습니다.");
+        imageInputEl.value = "";
+        return;
+      }
+
+      const maxMb = 2;
+      if (file.size > maxMb * 1024 * 1024) {
+        showToast(`이미지는 ${maxMb}MB 이하만 업로드 가능합니다.`);
+        imageInputEl.value = "";
+        return;
+      }
+
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      if (!stompClient || !stompClient.connected) connect();
+      if (!stompClient || !stompClient.connected) {
+        showToast("채널 연결 후 다시 시도해 주세요.");
+        imageInputEl.value = "";
+        return;
+      }
+
+      await refreshAccess();
+      if (!permLabelEl.textContent.includes("쓰기 가능")) {
+        showToast("이 채널에 쓰기 권한이 없습니다.");
+        imageInputEl.value = "";
+        return;
+      }
+
+      stompClient.send(`/pub/channels/${currentChannel}`, {}, JSON.stringify({ sender: sender(), content: `[img]${dataUrl}` }));
+      imageInputEl.value = "";
+      showToast("이미지 전송 완료");
+    }
+
+    function extractImageUrl(content) {
+      if (typeof content !== "string") return null;
+      if (!content.startsWith("[img]")) return null;
+      const url = content.slice(5).trim();
+      return url.startsWith("data:image/") ? url : null;
     }
 
     function escapeHtml(str) {
