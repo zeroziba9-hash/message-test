@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>WS Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+
+<body>
+    <h2>WebSocket Chat Test</h2>
+
+    <div>
+        <label>Channel ID:</label>
+        <input id="channel" value="1" />
+        <button onclick="connect()">Connect</button>
+        <button onclick="loadHistory()">Load History</button>
+        <button onclick="loadChannels()">List Channels</button>
+    </div>
+
+    <div style="margin-top: 12px;">
+        <label>Sender:</label>
+        <input id="sender" value="zeroziba" />
+        <label>Message:</label>
+        <input id="content" />
+        <button onclick="sendMsg()">Send</button>
+    </div>
+
+    <pre id="log" style="margin-top: 12px; border: 1px solid #444; padding: 8px; height: 260px; overflow:auto;"></pre>
+
+    <script>
+        let stompClient = null;
+        let channelId = "1";
+
+        function log(msg) {
+            const el = document.getElementById("log");
+            el.textContent += msg + "\n";
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function getChannelId() {
+            return document.getElementById("channel").value.trim();
+        }
+
+        function connect() {
+            channelId = getChannelId();
+            const socket = new SockJS("/ws");
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function () {
+                log("CONNECTED channel=" + channelId);
+                stompClient.subscribe("/sub/channels/" + channelId, function (frame) {
+                    log("RECV: " + frame.body);
+                });
+            });
+        }
+
+        function sendMsg() {
+            if (!stompClient) {
+                alert("먼저 connect 하셈");
+                return;
+            }
+            channelId = getChannelId();
+            const sender = document.getElementById("sender").value;
+            const content = document.getElementById("content").value;
+
+            stompClient.send("/pub/channels/" + channelId, {}, JSON.stringify({
+                sender, content
+            }));
+
+            document.getElementById("content").value = "";
+        }
+
+        async function loadHistory() {
+            channelId = getChannelId();
+            const res = await fetch(`/api/channels/${channelId}/messages?limit=50`);
+            const data = await res.json();
+            log("--- HISTORY ---");
+            data.forEach(m => log(JSON.stringify(m)));
+            log("--- END HISTORY ---");
+        }
+
+        async function loadChannels() {
+            const res = await fetch('/api/channels');
+            const data = await res.json();
+            log("CHANNELS: " + JSON.stringify(data));
+        }
+    </script>
+</body>
+
+</html>
