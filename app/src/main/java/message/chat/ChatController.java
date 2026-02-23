@@ -140,36 +140,49 @@ public class ChatController {
         return accessControlService.setChannelPermission(channelId, role, canRead, canWrite);
     }
 
-    @PutMapping("/api/admin/channels/{channelId}/messages/{messageId}")
+    @PutMapping("/api/channels/{channelId}/messages/{messageId}")
     public ChatMessage updateMessage(
             @PathVariable String channelId,
             @PathVariable long messageId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
             @Valid @RequestBody MessageUpdateRequest request) {
-        requireAdmin(sender, channelId);
+        ChatMessage target = chatService.findMessage(channelId, messageId);
+        requireMessagePermission(sender, channelId, target);
 
         ChatMessage updated = chatService.updateMessage(channelId, messageId, request.getContent());
         messagingTemplate.convertAndSend("/sub/channels/" + channelId, updated);
         return updated;
     }
 
-    @DeleteMapping("/api/admin/channels/{channelId}/messages/{messageId}")
+    @DeleteMapping("/api/channels/{channelId}/messages/{messageId}")
     public void deleteMessage(
             @PathVariable String channelId,
             @PathVariable long messageId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender) {
-        requireAdmin(sender, channelId);
+        ChatMessage target = chatService.findMessage(channelId, messageId);
+        requireMessagePermission(sender, channelId, target);
 
         chatService.deleteMessage(channelId, messageId);
+        String actor = sender.equals(target.getSender()) ? "사용자" : "관리자";
         messagingTemplate.convertAndSend(
                 "/sub/channels/" + channelId,
-                new ChatMessage(0, channelId, "시스템", "메시지 #" + messageId + " 이(가) 관리자에 의해 삭제되었습니다.", null));
+                new ChatMessage(0, channelId, "시스템", "메시지 #" + messageId + " 이(가) " + actor + "에 의해 삭제되었습니다.", null));
     }
 
     private void requireAdmin(String sender, String channelId) {
         var access = accessControlService.getSummary(sender, channelId);
         if (access.getRole() != ChatRole.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자만 수행할 수 있습니다");
+        }
+    }
+
+    private void requireMessagePermission(String sender, String channelId, ChatMessage target) {
+        var access = accessControlService.getSummary(sender, channelId);
+        boolean isAdmin = access.getRole() == ChatRole.ADMIN;
+        boolean isOwner = sender.equals(target.getSender());
+
+        if (!isAdmin && !isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 메시지 또는 관리자만 수정/삭제할 수 있습니다");
         }
     }
 }

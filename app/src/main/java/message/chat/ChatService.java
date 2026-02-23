@@ -68,33 +68,35 @@ public class ChatService {
         return all.subList(fromIndex, all.size());
     }
 
-    public ChatMessage updateMessage(String channelId, long messageId, String content) {
+    public ChatMessage findMessage(String channelId, long messageId) {
         var normalizedChannelId = normalizeChannelId(channelId);
+        var messages = channelMessages.getOrDefault(normalizedChannelId, new ConcurrentLinkedDeque<>());
+        for (ChatMessage message : messages) {
+            if (message.getId() == messageId) {
+                return message;
+            }
+        }
+        throw new IllegalArgumentException("message not found");
+    }
+
+    public ChatMessage updateMessage(String channelId, long messageId, String content) {
         var normalizedContent = safeTrim(content);
 
         if (normalizedContent == null || normalizedContent.isBlank()) {
             throw new IllegalArgumentException("content is required");
         }
 
-        var messages = channelMessages.getOrDefault(normalizedChannelId, new ConcurrentLinkedDeque<>());
-        for (ChatMessage message : messages) {
-            if (message.getId() == messageId) {
-                message.setContent(normalizedContent);
-                return message;
-            }
-        }
-
-        throw new IllegalArgumentException("message not found");
+        ChatMessage message = findMessage(channelId, messageId);
+        message.setContent(normalizedContent);
+        return message;
     }
 
     public void deleteMessage(String channelId, long messageId) {
         var normalizedChannelId = normalizeChannelId(channelId);
         var messages = channelMessages.getOrDefault(normalizedChannelId, new ConcurrentLinkedDeque<>());
 
-        boolean removed = messages.removeIf(message -> message.getId() == messageId);
-        if (!removed) {
-            throw new IllegalArgumentException("message not found");
-        }
+        ChatMessage target = findMessage(normalizedChannelId, messageId);
+        messages.remove(target);
     }
 
     public List<String> listChannels() {
