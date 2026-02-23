@@ -4,21 +4,21 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>로그인 | 사내 메신저</title>
+    <title>로그인 | Message Test</title>
     <link rel="stylesheet" href="/css/auth.css" />
 </head>
 
 <body>
     <main class="auth-wrap">
         <section class="card">
-            <h1>사내 메신저 로그인</h1>
-            <p class="desc">로그인 후 채팅 페이지로 이동합니다.</p>
+            <h1>Message Console Login</h1>
+            <p class="desc">실시간 채팅 테스트를 위해 로그인해 주세요.</p>
 
-            <label>아이디</label>
-            <input id="username" placeholder="아이디" />
+            <label for="username">아이디</label>
+            <input id="username" placeholder="아이디" autocomplete="username" />
 
-            <label>비밀번호</label>
-            <input id="password" type="password" placeholder="비밀번호" />
+            <label for="password">비밀번호</label>
+            <input id="password" type="password" placeholder="비밀번호" autocomplete="current-password" />
 
             <button id="loginBtn">로그인</button>
             <p class="status" id="status"></p>
@@ -38,29 +38,52 @@
         document.getElementById('loginBtn').addEventListener('click', login);
         document.getElementById('signupLink').addEventListener('click', (e) => {
             e.preventDefault();
-            window.open('/signup.html', 'signupWindow', 'width=520,height=680');
+            window.open('/signup.html', 'signupWindow', 'width=560,height=760');
+        });
+
+        [usernameEl, passwordEl].forEach(el => {
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') login();
+            });
         });
 
         async function login() {
             statusEl.textContent = '';
+            statusEl.classList.remove('ok');
+
             const username = usernameEl.value.trim();
             const password = passwordEl.value;
 
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                statusEl.textContent = data.message || '로그인에 실패했습니다.';
+            if (!username || !password) {
+                statusEl.textContent = '아이디와 비밀번호를 입력해 주세요.';
                 return;
             }
 
-            localStorage.setItem('chat.username', data.username || username);
-            localStorage.setItem('chat.nickname', data.nickname || username);
-            location.href = '/ws-test.html';
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    const detail = Array.isArray(data.details) ? data.details[0] : null;
+                    statusEl.textContent = detail || data.message || '로그인에 실패했습니다.';
+                    return;
+                }
+
+                localStorage.setItem('chat.username', data.username || username);
+                localStorage.setItem('chat.nickname', data.nickname || username);
+                statusEl.textContent = '로그인 성공. 채팅 화면으로 이동합니다...';
+                statusEl.classList.add('ok');
+
+                setTimeout(() => {
+                    location.href = '/ws-test.html';
+                }, 250);
+            } catch (err) {
+                statusEl.textContent = '서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+            }
         }
     </script>
 </body>

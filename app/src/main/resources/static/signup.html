@@ -4,26 +4,26 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>회원가입 | 사내 메신저</title>
+    <title>회원가입 | Message Test</title>
     <link rel="stylesheet" href="/css/auth.css" />
 </head>
 
 <body>
     <main class="auth-wrap">
         <section class="card">
-            <h1>회원가입</h1>
-            <p class="desc">아이디, 비밀번호, 닉네임을 입력해 주세요.</p>
+            <h1>Create Account</h1>
+            <p class="desc">간단 가입 후 바로 실시간 채팅을 테스트할 수 있습니다.</p>
 
-            <label>아이디</label>
+            <label for="username">아이디</label>
             <input id="username" placeholder="4~20자 소문자/숫자" />
 
-            <label>비밀번호</label>
+            <label for="password">비밀번호</label>
             <input id="password" type="password" placeholder="4~20자" />
 
-            <label>비밀번호 확인</label>
+            <label for="passwordConfirm">비밀번호 확인</label>
             <input id="passwordConfirm" type="password" placeholder="비밀번호 재입력" />
 
-            <label>닉네임</label>
+            <label for="nickname">닉네임</label>
             <input id="nickname" placeholder="2~20자" />
 
             <button id="signupBtn">회원가입</button>
@@ -64,23 +64,28 @@
                 return;
             }
 
-            const res = await fetch('/api/auth/signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            try {
+                const res = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                statusEl.textContent = data.message || '회원가입에 실패했습니다.';
-                return;
-            }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    const detail = Array.isArray(data.details) ? data.details[0] : null;
+                    statusEl.textContent = detail || data.message || '회원가입에 실패했습니다.';
+                    return;
+                }
 
-            statusEl.textContent = '회원가입 완료! 이 창을 닫고 로그인해 주세요.';
-            statusEl.classList.add('ok');
+                statusEl.textContent = '회원가입 완료! 로그인 창으로 이동하세요.';
+                statusEl.classList.add('ok');
 
-            if (window.opener) {
-                setTimeout(() => window.close(), 1200);
+                if (window.opener) {
+                    setTimeout(() => window.close(), 1200);
+                }
+            } catch (_) {
+                statusEl.textContent = '서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.';
             }
         }
     </script>

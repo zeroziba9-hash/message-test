@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>사내 메신저 콘솔</title>
+    <title>Message Test Console</title>
     <link rel="stylesheet" href="/css/ws-test.css" />
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
@@ -13,7 +13,7 @@
 <body>
     <div class="app">
         <aside class="sidebar">
-            <div class="brand">사내 메신저</div>
+            <div class="brand">Message Test</div>
 
             <div class="section">
                 <label class="label" for="sender">내 닉네임</label>
@@ -104,9 +104,7 @@
         const permLabelEl = document.getElementById("permLabel");
 
         const savedNickname = localStorage.getItem('chat.nickname');
-        if (savedNickname) {
-            senderEl.value = savedNickname;
-        }
+        if (savedNickname) senderEl.value = savedNickname;
 
         document.getElementById("connectBtn").addEventListener("click", connect);
         document.getElementById("historyBtn").addEventListener("click", loadHistory);
@@ -122,10 +120,20 @@
             }
         });
 
+        function showToast(message) {
+            const prev = document.querySelector('.toast');
+            if (prev) prev.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2200);
+        }
+
         function sender() { return senderEl.value.trim(); }
 
-        function setStatus(connected) {
-            statusTextEl.textContent = connected ? "연결됨" : "연결 끊김";
+        function setStatus(connected, label = null) {
+            statusTextEl.textContent = label || (connected ? "연결됨" : "연결 끊김");
             statusDotEl.classList.toggle("ok", connected);
         }
 
@@ -137,8 +145,7 @@
         function renderMessage(msg, mine = false) {
             const wrap = document.createElement("article");
             wrap.className = "message" + (mine ? " mine" : "");
-
-            const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : "-";
+            const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : new Date().toLocaleTimeString();
             wrap.innerHTML = `
                 <div class="meta">
                     <strong>${escapeHtml(msg.sender || "알수없음")}</strong>
@@ -146,14 +153,11 @@
                 </div>
                 <div class="content">${escapeHtml(msg.content || "")}</div>
             `;
-
             messagesEl.appendChild(wrap);
             messagesEl.scrollTop = messagesEl.scrollHeight;
         }
 
-        function clearMessages() {
-            messagesEl.innerHTML = "";
-        }
+        function clearMessages() { messagesEl.innerHTML = ""; }
 
         function updateRoomTitle() {
             roomTitleEl.textContent = `# ${currentChannel}`;
@@ -181,7 +185,14 @@
             });
         }
 
+        function extractErrorMessage(data, fallback) {
+            if (data?.details?.length) return data.details[0];
+            if (data?.message) return data.message;
+            return fallback;
+        }
+
         async function refreshAccess() {
+            if (!sender()) return;
             try {
                 const res = await fetch(`/api/access/${encodeURIComponent(currentChannel)}?sender=${encodeURIComponent(sender())}`);
                 if (!res.ok) return;
@@ -190,12 +201,17 @@
                 permLabelEl.textContent = `권한: ${access.canRead ? "읽기 가능" : "읽기 불가"} / ${access.canWrite ? "쓰기 가능" : "쓰기 불가"}`;
                 document.getElementById("canRead").checked = access.canRead;
                 document.getElementById("canWrite").checked = access.canWrite;
-            } catch (e) {
-                console.error(e);
+            } catch {
+                // ignore
             }
         }
 
         function connect() {
+            if (!sender()) {
+                showToast('닉네임을 먼저 입력해 주세요.');
+                return;
+            }
+
             currentChannel = getChannelId();
             updateRoomTitle();
 
@@ -203,6 +219,7 @@
                 stompClient.disconnect(() => setStatus(false));
             }
 
+            setStatus(false, '연결 중...');
             const socket = new SockJS("/ws");
             stompClient = Stomp.over(socket);
             stompClient.debug = null;
@@ -220,33 +237,34 @@
                     renderPresence(JSON.parse(frame.body));
                 });
 
-                stompClient.send(`/pub/channels/${currentChannel}/join`, {}, JSON.stringify({ sender: sender(), content: "" }));
-
+                stompClient.send(`/pub/channels/${currentChannel}/join`, {}, JSON.stringify({ sender: sender(), content: "joined" }));
                 await refreshAccess();
-                loadHistory();
-                loadChannels();
-                loadOnlineUsers();
+                await loadHistory();
+                await loadChannels();
+                await loadOnlineUsers();
+                showToast(`${currentChannel} 채널 입장 완료`);
             }, () => {
                 setStatus(false);
+                showToast('연결에 실패했습니다. 서버 상태를 확인해 주세요.');
             });
         }
 
         async function sendMsg() {
             if (!stompClient || !stompClient.connected) {
-                alert("먼저 채널에 입장해 주세요.");
+                showToast('먼저 채널에 입장해 주세요.');
                 return;
             }
 
-            const content = contentEl.value.trim();
-            if (!sender() || !content) return;
+            const text = contentEl.value.trim();
+            if (!sender() || !text) return;
 
             await refreshAccess();
             if (!permLabelEl.textContent.includes("쓰기 가능")) {
-                alert("이 채널에 쓰기 권한이 없습니다.");
+                showToast('이 채널에 쓰기 권한이 없습니다.');
                 return;
             }
 
-            stompClient.send(`/pub/channels/${currentChannel}`, {}, JSON.stringify({ sender: sender(), content }));
+            stompClient.send(`/pub/channels/${currentChannel}`, {}, JSON.stringify({ sender: sender(), content: text }));
             contentEl.value = "";
             contentEl.focus();
         }
@@ -254,29 +272,24 @@
         async function loadHistory() {
             try {
                 const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages?sender=${encodeURIComponent(sender())}&limit=50`);
-                if (res.status === 403) {
+                const data = await res.json().catch(() => ([]));
+                if (!res.ok) {
                     clearMessages();
-                    renderMessage({ sender: "시스템", content: "읽기 권한이 없어 대화 기록을 볼 수 없습니다.", sentAt: new Date() }, false);
+                    renderMessage({ sender: "시스템", content: extractErrorMessage(data, "대화 기록 로드 실패"), sentAt: new Date() }, false);
                     return;
                 }
-                if (!res.ok) throw new Error("history load failed");
-                const data = await res.json();
                 clearMessages();
-                data.forEach(msg => {
-                    const mine = (msg.sender || "") === sender();
-                    renderMessage(msg, mine);
-                });
-            } catch (e) {
-                console.error(e);
+                data.forEach(msg => renderMessage(msg, (msg.sender || "") === sender()));
+            } catch {
+                showToast('대화 기록을 불러오지 못했습니다.');
             }
         }
 
         async function loadChannels() {
             try {
                 const res = await fetch('/api/channels');
-                if (!res.ok) throw new Error("channels load failed");
+                if (!res.ok) throw new Error();
                 const channels = await res.json();
-
                 channelListEl.innerHTML = "";
                 const uniq = new Set([currentChannel, ...channels]);
 
@@ -291,23 +304,22 @@
                     };
                     channelListEl.appendChild(btn);
                 });
-            } catch (e) {
-                console.error(e);
+            } catch {
+                showToast('채널 목록을 불러오지 못했습니다.');
             }
         }
 
         async function loadOnlineUsers() {
             try {
                 const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/online-users?sender=${encodeURIComponent(sender())}`);
-                if (res.status === 403) {
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
                     renderPresence({ users: [], onlineCount: 0 });
                     return;
                 }
-                if (!res.ok) throw new Error("online users load failed");
-                const data = await res.json();
                 renderPresence(data);
-            } catch (e) {
-                console.error(e);
+            } catch {
+                showToast('온라인 사용자 목록 조회 실패');
             }
         }
 
@@ -315,11 +327,13 @@
             const target = document.getElementById("adminTargetUser").value.trim();
             const role = document.getElementById("adminRole").value;
             if (!target) return;
+
             const res = await fetch(`/api/admin/users/${encodeURIComponent(target)}/role?role=${encodeURIComponent(role)}`, { method: "POST" });
             if (!res.ok) {
-                alert("역할 변경 실패");
+                showToast("역할 변경 실패");
                 return;
             }
+            showToast(`${target} 역할이 ${role}로 변경됨`);
             await refreshAccess();
             loadOnlineUsers();
         }
@@ -331,9 +345,11 @@
 
             const res = await fetch(`/api/admin/channels/${encodeURIComponent(currentChannel)}/permissions?role=${encodeURIComponent(role)}&canRead=${canRead}&canWrite=${canWrite}`, { method: "POST" });
             if (!res.ok) {
-                alert("채널 권한 변경 실패");
+                const errorData = await res.json().catch(() => ({}));
+                showToast(extractErrorMessage(errorData, '채널 권한 변경 실패'));
                 return;
             }
+            showToast(`${role} 권한 변경 완료`);
             await refreshAccess();
         }
 
