@@ -103,6 +103,11 @@
         const roleLabelEl = document.getElementById("roleLabel");
         const permLabelEl = document.getElementById("permLabel");
 
+        const savedNickname = localStorage.getItem('chat.nickname');
+        if (savedNickname) {
+            senderEl.value = savedNickname;
+        }
+
         document.getElementById("connectBtn").addEventListener("click", connect);
         document.getElementById("historyBtn").addEventListener("click", loadHistory);
         document.getElementById("channelsBtn").addEventListener("click", loadChannels);

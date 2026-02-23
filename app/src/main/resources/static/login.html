@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>로그인 | 사내 메신저</title>
+    <link rel="stylesheet" href="/css/auth.css" />
+</head>
+
+<body>
+    <main class="auth-wrap">
+        <section class="card">
+            <h1>사내 메신저 로그인</h1>
+            <p class="desc">로그인 후 채팅 페이지로 이동합니다.</p>
+
+            <label>아이디</label>
+            <input id="username" placeholder="아이디" />
+
+            <label>비밀번호</label>
+            <input id="password" type="password" placeholder="비밀번호" />
+
+            <button id="loginBtn">로그인</button>
+            <p class="status" id="status"></p>
+
+            <p class="footer-link">
+                계정이 없나요?
+                <a href="#" id="signupLink">회원가입</a>
+            </p>
+        </section>
+    </main>
+
+    <script>
+        const usernameEl = document.getElementById('username');
+        const passwordEl = document.getElementById('password');
+        const statusEl = document.getElementById('status');
+
+        document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('signupLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.open('/signup.html', 'signupWindow', 'width=520,height=680');
+        });
+
+        async function login() {
+            statusEl.textContent = '';
+            const username = usernameEl.value.trim();
+            const password = passwordEl.value;
+
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                statusEl.textContent = data.message || '로그인에 실패했습니다.';
+                return;
+            }
+
+            localStorage.setItem('chat.username', data.username || username);
+            localStorage.setItem('chat.nickname', data.nickname || username);
+            location.href = '/ws-test.html';
+        }
+    </script>
+</body>
+
+</html>
