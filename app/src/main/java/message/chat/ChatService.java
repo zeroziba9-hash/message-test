@@ -7,19 +7,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.springframework.stereotype.Service;
 
 @Service
 public class ChatService {
+    public static final String DEFAULT_CHANNEL = "자유채팅방";
     private static final int MAX_MESSAGES_PER_CHANNEL = 100;
 
     private final AtomicLong sequence = new AtomicLong(1);
     private final Map<String, Deque<ChatMessage>> channelMessages = new ConcurrentHashMap<>();
+    private final CopyOnWriteArrayList<String> channelOrder = new CopyOnWriteArrayList<>();
+
+    public ChatService() {
+        createChannel(DEFAULT_CHANNEL);
+    }
 
     public ChatMessage saveMessage(String channelId, ChatSendRequest request) {
         var normalizedChannelId = normalizeChannelId(channelId);
+        createChannel(normalizedChannelId);
+
         var sender = safeTrim(request.getSender());
         var content = safeTrim(request.getContent());
 
@@ -51,8 +59,9 @@ public class ChatService {
 
     public List<ChatMessage> getRecentMessages(String channelId, int limit) {
         var normalizedChannelId = normalizeChannelId(channelId);
-        var messages = channelMessages.getOrDefault(normalizedChannelId, new ConcurrentLinkedDeque<>());
+        createChannel(normalizedChannelId);
 
+        var messages = channelMessages.getOrDefault(normalizedChannelId, new ConcurrentLinkedDeque<>());
         int safeLimit = Math.max(1, Math.min(limit, MAX_MESSAGES_PER_CHANNEL));
         List<ChatMessage> all = new ArrayList<>(messages);
         int fromIndex = Math.max(0, all.size() - safeLimit);
@@ -89,7 +98,39 @@ public class ChatService {
     }
 
     public List<String> listChannels() {
-        return new ArrayList<>(channelMessages.keySet());
+        return new ArrayList<>(channelOrder);
+    }
+
+    public String createChannel(String channelId) {
+        var normalized = normalizeChannelId(channelId);
+        channelMessages.computeIfAbsent(normalized, key -> new ConcurrentLinkedDeque<>());
+        if (!channelOrder.contains(normalized)) {
+            channelOrder.add(normalized);
+        }
+        return normalized;
+    }
+
+    public List<String> reorderChannels(List<String> channelIds) {
+        if (channelIds == null || channelIds.isEmpty()) {
+            throw new IllegalArgumentException("channelIds is required");
+        }
+
+        List<String> normalized = channelIds.stream()
+                .map(this::normalizeChannelId)
+                .distinct()
+                .toList();
+
+        if (!normalized.contains(DEFAULT_CHANNEL)) {
+            throw new IllegalArgumentException("기본 채널은 제거할 수 없습니다");
+        }
+
+        for (String channelId : normalized) {
+            createChannel(channelId);
+        }
+
+        channelOrder.clear();
+        channelOrder.addAll(normalized);
+        return listChannels();
     }
 
     private String normalizeChannelId(String channelId) {

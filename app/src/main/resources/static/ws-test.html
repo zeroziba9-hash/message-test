@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ko">
 
 <head>
@@ -15,21 +15,40 @@
         <aside class="sidebar">
             <div class="brand">Message Test</div>
 
-            <div class="section">
-                <label class="label" for="sender">내 닉네임</label>
+            <div class="section profile-box">
+                <div class="label">내 닉네임</div>
                 <input id="sender" value="사용자1" />
                 <div class="hint" id="roleLabel">역할: MEMBER</div>
+                <div class="profile-actions">
+                    <button id="editProfileBtn">내 정보 수정</button>
+                    <button id="logoutBtn" class="danger-soft">로그아웃</button>
+                </div>
             </div>
 
-            <div class="section">
-                <label class="label" for="channel">채널</label>
-                <div class="row">
-                    <input id="channel" value="general" />
-                    <button id="connectBtn" class="btn-primary">입장</button>
-                </div>
+            <div class="section fixed-room">
+                <div class="label">기본 채팅</div>
+                <div class="room-fixed-name">자유채팅방</div>
                 <div class="hint" id="permLabel">권한: 읽기 가능 / 쓰기 가능</div>
             </div>
-<div class="section action-buttons admin-panel hidden" id="adminPanel">
+
+            <div class="section list-section">
+                <div class="list-title with-actions">
+                    <span>채팅방</span>
+                    <label class="mini-toggle admin-only hidden" id="manageModeWrap">
+                        <input type="checkbox" id="manageMode" />
+                        관리모드
+                    </label>
+                </div>
+
+                <div class="admin-add-row admin-only hidden" id="adminAddRow">
+                    <input id="newChannelName" placeholder="새 채팅방 이름" />
+                    <button id="addChannelBtn" class="btn-primary">추가</button>
+                </div>
+
+                <div class="channels" id="channelList"></div>
+            </div>
+
+            <div class="section action-buttons admin-panel hidden" id="adminPanel">
                 <div class="list-title">관리자 메뉴</div>
                 <input id="adminTargetUser" placeholder="대상 사용자" value="사용자1" />
                 <select id="adminRole">
@@ -51,21 +70,11 @@
                 <button id="setPermBtn">채널 권한 변경</button>
                 <div class="hint">메시지 우클릭 시 수정/삭제 메뉴가 열립니다.</div>
             </div>
-
-            <div class="section list-section">
-                <div class="list-title">채널 목록</div>
-                <div class="channels" id="channelList"></div>
-            </div>
-
-            <div class="section list-section online-section">
-                <div class="list-title">접속 중 <span id="onlineCount">0</span>명</div>
-                <div class="online-users" id="onlineUsers"></div>
-            </div>
         </aside>
 
         <main class="main">
             <header class="topbar">
-                <h1 id="roomTitle"># general</h1>
+                <h1 id="roomTitle"># 자유채팅방</h1>
                 <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">연결 끊김</span></div>
             </header>
 
@@ -79,6 +88,11 @@
                 <button id="sendBtn" class="btn-primary">전송</button>
             </footer>
         </main>
+
+        <aside class="rightbar">
+            <div class="rightbar-title">접속 중 <span id="onlineCount">0</span>명</div>
+            <div class="online-users" id="onlineUsers"></div>
+        </aside>
     </div>
 
     <div id="messageContextMenu" class="message-menu hidden">
@@ -88,11 +102,11 @@
 
     <script>
         let stompClient = null;
-        let currentChannel = "general";
+        const DEFAULT_CHANNEL = "자유채팅방";
+        let currentChannel = DEFAULT_CHANNEL;
 
         const appRootEl = document.getElementById("appRoot");
         const senderEl = document.getElementById("sender");
-        const channelEl = document.getElementById("channel");
         const contentEl = document.getElementById("content");
         const messagesEl = document.getElementById("messages");
         const roomTitleEl = document.getElementById("roomTitle");
@@ -105,17 +119,25 @@
         const permLabelEl = document.getElementById("permLabel");
         const adminPanelEl = document.getElementById("adminPanel");
         const messageMenuEl = document.getElementById("messageContextMenu");
+        const manageModeWrapEl = document.getElementById("manageModeWrap");
+        const manageModeEl = document.getElementById("manageMode");
+        const adminAddRowEl = document.getElementById("adminAddRow");
+        const newChannelNameEl = document.getElementById("newChannelName");
 
         let currentRole = "MEMBER";
         let selectedMessageId = null;
+        let dragChannel = null;
 
         const savedNickname = localStorage.getItem('chat.nickname');
         if (savedNickname) senderEl.value = savedNickname;
 
-        document.getElementById("connectBtn").addEventListener("click", connect);
         document.getElementById("sendBtn").addEventListener("click", sendMsg);
         document.getElementById("setRoleBtn").addEventListener("click", setUserRole);
         document.getElementById("setPermBtn").addEventListener("click", setChannelPermission);
+        document.getElementById("addChannelBtn").addEventListener("click", addChannel);
+        document.getElementById("editProfileBtn").addEventListener("click", editProfile);
+        document.getElementById("logoutBtn").addEventListener("click", logout);
+        manageModeEl.addEventListener("change", loadChannels);
         messageMenuEl.addEventListener("click", onMessageMenuClick);
 
         document.addEventListener("click", () => hideMessageMenu());
@@ -144,11 +166,6 @@
             statusDotEl.classList.toggle("ok", connected);
         }
 
-        function getChannelId() {
-            const id = channelEl.value.trim();
-            return id || "general";
-        }
-
         function renderMessage(msg, mine = false) {
             const wrap = document.createElement("article");
             wrap.className = "message" + (mine ? " mine" : "");
@@ -157,7 +174,7 @@
             const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : new Date().toLocaleTimeString();
             wrap.innerHTML = `
                 <div class="meta">
-                    <strong>${escapeHtml(msg.sender || "알수없음")}</strong>
+                    <strong class="sender">${escapeHtml(msg.sender || "알수없음")}</strong>
                     <span>${escapeHtml(sentAt)}</span>
                 </div>
                 <div class="content">${escapeHtml(msg.content || "")}</div>
@@ -177,7 +194,6 @@
 
         function updateRoomTitle() {
             roomTitleEl.textContent = `# ${currentChannel}`;
-            channelEl.value = currentChannel;
         }
 
         function renderPresence(snapshot) {
@@ -220,6 +236,8 @@
                 document.getElementById("canRead").checked = access.canRead;
                 document.getElementById("canWrite").checked = access.canWrite;
                 adminPanelEl.classList.toggle("hidden", currentRole !== "ADMIN");
+                manageModeWrapEl.classList.toggle("hidden", currentRole !== "ADMIN");
+                adminAddRowEl.classList.toggle("hidden", currentRole !== "ADMIN");
             } catch {
                 // ignore
             }
@@ -231,7 +249,6 @@
                 return;
             }
 
-            currentChannel = getChannelId();
             updateRoomTitle();
 
             if (stompClient && stompClient.connected) {
@@ -270,7 +287,7 @@
 
         async function sendMsg() {
             if (!stompClient || !stompClient.connected) {
-                showToast('먼저 채널에 입장해 주세요.');
+                connect();
                 return;
             }
 
@@ -310,22 +327,74 @@
                 if (!res.ok) throw new Error();
                 const channels = await res.json();
                 channelListEl.innerHTML = "";
-                const uniq = new Set([currentChannel, ...channels]);
 
-                [...uniq].sort().forEach(ch => {
+                channels.forEach(ch => {
                     const btn = document.createElement("button");
                     btn.className = "channel-item" + (ch === currentChannel ? " active" : "");
                     btn.textContent = `# ${ch}`;
-                    btn.onclick = () => {
-                        currentChannel = ch;
-                        updateRoomTitle();
-                        connect();
-                    };
+                    btn.onclick = () => moveChannel(ch);
+
+                    const dragEnabled = currentRole === "ADMIN" && manageModeEl.checked;
+                    btn.draggable = dragEnabled;
+
+                    if (dragEnabled) {
+                        btn.addEventListener("dragstart", () => dragChannel = ch);
+                        btn.addEventListener("dragover", (e) => e.preventDefault());
+                        btn.addEventListener("drop", async (e) => {
+                            e.preventDefault();
+                            if (!dragChannel || dragChannel === ch) return;
+                            const updated = [...channels];
+                            const from = updated.indexOf(dragChannel);
+                            const to = updated.indexOf(ch);
+                            if (from < 0 || to < 0) return;
+                            updated.splice(from, 1);
+                            updated.splice(to, 0, dragChannel);
+                            await reorderChannels(updated);
+                        });
+                    }
+
                     channelListEl.appendChild(btn);
                 });
             } catch {
                 showToast('채널 목록을 불러오지 못했습니다.');
             }
+        }
+
+        async function moveChannel(channelId) {
+            currentChannel = channelId;
+            updateRoomTitle();
+            connect();
+        }
+
+        async function addChannel() {
+            const channelName = newChannelNameEl.value.trim();
+            if (!channelName) return;
+
+            const res = await fetch(`/api/admin/channels?sender=${encodeURIComponent(sender())}&channelId=${encodeURIComponent(channelName)}`, { method: "POST" });
+            const data = await res.json().catch(() => ([]));
+            if (!res.ok) {
+                showToast(extractErrorMessage(data, "채널 추가 실패"));
+                return;
+            }
+
+            newChannelNameEl.value = "";
+            showToast(`채널 #${channelName} 추가 완료`);
+            await loadChannels();
+        }
+
+        async function reorderChannels(nextOrder) {
+            const res = await fetch(`/api/admin/channels/reorder?sender=${encodeURIComponent(sender())}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ channelIds: nextOrder })
+            });
+
+            const data = await res.json().catch(() => ([]));
+            if (!res.ok) {
+                showToast(extractErrorMessage(data, "채널 순서 변경 실패"));
+                return;
+            }
+            await loadChannels();
         }
 
         async function loadOnlineUsers() {
@@ -370,6 +439,20 @@
             }
             showToast(`${role} 권한 변경 완료`);
             await refreshAccess();
+        }
+
+        function editProfile() {
+            const next = prompt("새 닉네임을 입력하세요.", sender());
+            if (!next || !next.trim()) return;
+            senderEl.value = next.trim();
+            localStorage.setItem('chat.nickname', sender());
+            refreshAccess();
+            showToast("닉네임이 변경되었습니다.");
+        }
+
+        function logout() {
+            localStorage.removeItem('chat.nickname');
+            window.location.href = '/login.html';
         }
 
         function openMessageMenu(messageId, x, y) {
@@ -449,7 +532,7 @@
         updateRoomTitle();
         loadChannels();
         refreshAccess();
-        loadOnlineUsers();
+        connect();
     </script>
 </body>
 

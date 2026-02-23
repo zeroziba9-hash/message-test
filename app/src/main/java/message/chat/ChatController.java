@@ -71,6 +71,23 @@ public class ChatController {
         return chatService.listChannels();
     }
 
+    @PostMapping("/api/admin/channels")
+    public List<String> createChannel(
+            @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
+            @RequestParam @NotBlank(message = "channelId는 필수입니다.") String channelId) {
+        requireAdmin(sender, ChatService.DEFAULT_CHANNEL);
+        chatService.createChannel(channelId);
+        return chatService.listChannels();
+    }
+
+    @PostMapping("/api/admin/channels/reorder")
+    public List<String> reorderChannels(
+            @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
+            @Valid @RequestBody ChannelOrderRequest request) {
+        requireAdmin(sender, ChatService.DEFAULT_CHANNEL);
+        return chatService.reorderChannels(request.getChannelIds());
+    }
+
     @GetMapping("/api/channels/{channelId}/messages")
     public List<ChatMessage> getMessages(
             @PathVariable String channelId,
@@ -108,7 +125,7 @@ public class ChatController {
             @PathVariable String sender,
             @RequestParam @NotBlank(message = "actor는 필수입니다.") String actor,
             @RequestParam @NotBlank(message = "role은 필수입니다.") String role) {
-        requireAdmin(actor, "general");
+        requireAdmin(actor, ChatService.DEFAULT_CHANNEL);
         return accessControlService.setUserRole(sender, role);
     }
 
