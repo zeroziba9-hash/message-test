@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 
 <head>
@@ -29,13 +29,7 @@
                 </div>
                 <div class="hint" id="permLabel">권한: 읽기 가능 / 쓰기 가능</div>
             </div>
-
-            <div class="section action-buttons">
-                <button id="historyBtn">대화 기록</button>
-                <button id="channelsBtn">채널 새로고침</button>
-            </div>
-
-            <div class="section action-buttons admin-panel hidden" id="adminPanel">
+<div class="section action-buttons admin-panel hidden" id="adminPanel">
                 <div class="list-title">관리자 메뉴</div>
                 <input id="adminTargetUser" placeholder="대상 사용자" value="사용자1" />
                 <select id="adminRole">
@@ -119,8 +113,6 @@
         if (savedNickname) senderEl.value = savedNickname;
 
         document.getElementById("connectBtn").addEventListener("click", connect);
-        document.getElementById("historyBtn").addEventListener("click", loadHistory);
-        document.getElementById("channelsBtn").addEventListener("click", loadChannels);
         document.getElementById("sendBtn").addEventListener("click", sendMsg);
         document.getElementById("setRoleBtn").addEventListener("click", setUserRole);
         document.getElementById("setPermBtn").addEventListener("click", setChannelPermission);
