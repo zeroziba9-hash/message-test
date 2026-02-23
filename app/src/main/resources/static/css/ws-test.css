@@ -187,6 +187,30 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   background: transparent;
   border: 1px solid transparent;
   color: #a9b9df;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ch-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .channel-item:hover { color: var(--text); background: #211318; border-color: rgba(255, 72, 102, .45); }

@@ -115,6 +115,8 @@
     let selectedMessage = null;
     let selectedUser = null;
     let dragChannel = null;
+    const unreadCounts = new Map();
+    const lastSeenMessageId = new Map();
 
     const storedNickname = sessionStorage.getItem("chat.nickname")
       || localStorage.getItem("chat.nickname")
@@ -217,6 +219,12 @@
 
     function clearMessages() { messagesEl.innerHTML = ""; }
 
+    function markChannelSeen(channelId, messages) {
+      const maxId = (messages || []).reduce((max, m) => Math.max(max, Number(m.id || 0)), 0);
+      if (maxId > 0) lastSeenMessageId.set(channelId, maxId);
+      unreadCounts.set(channelId, 0);
+    }
+
     function updateRoomTitle() {
       roomTitleEl.textContent = `# ${currentChannel}`;
     }
@@ -296,6 +304,7 @@
           const msg = JSON.parse(frame.body);
           const mine = (msg.sender || "") === sender();
           renderMessage(msg, mine);
+          if (msg?.id) lastSeenMessageId.set(currentChannel, Number(msg.id));
         });
 
         stompClient.subscribe(`/sub/channels/${currentChannel}/presence`, (frame) => {
@@ -305,6 +314,7 @@
         stompClient.send(`/pub/channels/${currentChannel}/join`, {}, JSON.stringify({ sender: sender(), content: "joined" }));
         await refreshAccess();
         await loadHistory();
+        await refreshUnreadBadges();
         await loadChannels();
         await loadOnlineUsers();
       }, () => {
@@ -344,6 +354,8 @@
         }
         clearMessages();
         data.forEach(msg => renderMessage(msg, (msg.sender || "") === sender()));
+        markChannelSeen(currentChannel, data);
+        await refreshUnreadBadges();
       } catch {
         showToast("대화 기록을 불러오지 못했습니다.");
       }
@@ -359,7 +371,20 @@
         channels.forEach(ch => {
           const btn = document.createElement("button");
           btn.className = "channel-item" + (ch === currentChannel ? " active" : "");
-          btn.textContent = `# ${ch}`;
+
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent = `# ${ch}`;
+          nameSpan.className = "ch-name";
+          btn.appendChild(nameSpan);
+
+          const unread = unreadCounts.get(ch) || 0;
+          if (unread > 0 && ch !== currentChannel) {
+            const badge = document.createElement("span");
+            badge.className = "unread-badge";
+            badge.textContent = unread > 99 ? "99+" : String(unread);
+            btn.appendChild(badge);
+          }
+
           btn.onclick = () => moveChannel(ch);
 
           const dragEnabled = currentRole === "ADMIN" && manageModeEl.checked;
@@ -388,8 +413,30 @@
       }
     }
 
+    async function refreshUnreadBadges() {
+      if (!sender()) return;
+      try {
+        const res = await fetch("/api/channels");
+        if (!res.ok) return;
+        const channels = await res.json();
+
+        await Promise.all(channels.map(async (ch) => {
+          if (ch === currentChannel) return;
+          const msgRes = await fetch(`/api/channels/${encodeURIComponent(ch)}/messages?sender=${encodeURIComponent(sender())}&limit=100`);
+          if (!msgRes.ok) return;
+          const msgs = await msgRes.json().catch(() => ([]));
+          const seen = lastSeenMessageId.get(ch) || 0;
+          const unread = msgs.filter(m => Number(m.id || 0) > seen).length;
+          unreadCounts.set(ch, unread);
+        }));
+      } catch {
+        // ignore unread polling errors
+      }
+    }
+
     async function moveChannel(channelId) {
       currentChannel = channelId;
+      unreadCounts.set(channelId, 0);
       updateRoomTitle();
       connect();
     }
@@ -592,6 +639,11 @@
     loadChannels();
     refreshAccess();
     connect();
+
+    setInterval(async () => {
+      await refreshUnreadBadges();
+      await loadChannels();
+    }, 5000);
   </script>
 </body>
 </html>
