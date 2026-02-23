@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
-  --panel: rgba(14, 20, 38, .82);
-  --panel-2: rgba(16, 24, 44, .94);
-  --line: rgba(149, 171, 255, 0.24);
-  --line-strong: rgba(161, 182, 255, 0.42);
-  --text: #eaf1ff;
-  --muted: #9baed8;
-  --accent: #77a2ff;
-  --accent-2: #5f82f3;
-  --ok: #65f3a7;
-  --danger: #ff758f;
+  --panel: rgba(18, 10, 14, .9);
+  --panel-2: rgba(24, 12, 18, .95);
+  --line: rgba(255, 106, 138, 0.2);
+  --line-strong: rgba(255, 122, 152, 0.34);
+  --text: #ffeef3;
+  --muted: #c9a6b2;
+  --accent: #ff4d79;
+  --accent-2: #d83462;
+  --ok: #6ef3ba;
+  --danger: #ff5f85;
   --radius: 12px;
   --gap: 10px;
 }
@@ -24,9 +24,9 @@ body {
   color: var(--text);
   font: 14px/1.5 Inter, 'Noto Sans KR', Arial, sans-serif;
   background:
-    radial-gradient(1200px 700px at 0% 0%, #3d64ff30 0%, transparent 55%),
-    radial-gradient(800px 500px at 100% 0%, #9d4dff26 0%, transparent 60%),
-    linear-gradient(130deg, #070a14, #121a2d 45%, #25173f);
+    radial-gradient(900px 520px at 0% 0%, #ff3f6b1f 0%, transparent 55%),
+    radial-gradient(700px 520px at 100% 100%, #cc295215 0%, transparent 62%),
+    linear-gradient(145deg, #080609, #130a0f 55%, #1a0d14);
 }
 
 .app {
@@ -40,12 +40,13 @@ body {
   grid-template-columns: 320px 1fr 260px;
   background: var(--panel);
   backdrop-filter: blur(16px) saturate(135%);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 102, 132, .12) inset;
 }
 
 .sidebar,
 .rightbar {
   min-height: 0;
-  background: linear-gradient(180deg, #0f1730d4, #0d1222e0);
+  background: linear-gradient(180deg, #1a0f16f0, #120b11f0);
 }
 
 .sidebar {
@@ -73,7 +74,8 @@ body {
 .brand, .section {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: linear-gradient(180deg, #ffffff06, #00000010);
+  background: linear-gradient(180deg, #ffffff05, #0000001a);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 16px rgba(0,0,0,.18);
 }
 
 .brand {
@@ -102,8 +104,8 @@ input, textarea, select, button, .nickname-value { font: inherit; }
 
 input, textarea, select, .nickname-value {
   width: 100%;
-  border: 1px solid #95a8dd33;
-  background: #0b1224;
+  border: 1px solid rgba(255, 122, 152, .28);
+  background: #120912;
   color: var(--text);
   border-radius: 10px;
   padding: 10px 11px;
@@ -113,22 +115,24 @@ input, textarea, select, .nickname-value {
 .nickname-value { font-weight: 700; }
 
 button {
-  border: 1px solid #93a9e82d;
-  background: #1a2440;
+  border: 1px solid rgba(255, 122, 152, .35);
+  background: #24101a;
   color: var(--text);
   border-radius: 10px;
   padding: 9px 10px;
   cursor: pointer;
   font-weight: 600;
+  transition: .16s ease;
 }
 
-button:hover { background: #243456; border-color: #95aff75f; }
+button:hover { background: #311422; border-color: rgba(255, 122, 152, .6); }
 
 .btn-primary {
-  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
   border-color: transparent;
   color: #fff;
   font-weight: 700;
+  box-shadow: 0 8px 18px rgba(255, 62, 112, .28);
 }
 
 .profile-actions {
@@ -138,7 +142,7 @@ button:hover { background: #243456; border-color: #95aff75f; }
   gap: 8px;
 }
 
-.danger-soft { border-color: #ff93a255; color: #ff9cb3; }
+.danger-soft { border-color: rgba(255, 98, 130, .55); color: #ff7a97; background: #2a121c; }
 
 .fixed-room .room-fixed-name {
   font-size: 42px;
@@ -171,8 +175,8 @@ button:hover { background: #243456; border-color: #95aff75f; }
   color: #a9b9df;
 }
 
-.channel-item:hover { color: var(--text); background: #1d2b4ac4; border-color: #8ca8ff44; }
-.channel-item.active { color: #fff; background: #2a3b65; border-color: #5d7ed6; }
+.channel-item:hover { color: var(--text); background: #2a1420c7; border-color: rgba(255, 122, 152, .45); }
+.channel-item.active { color: #fff; background: #3a1828; border-color: rgba(255, 122, 152, .75); }
 
 #roleLabel { display: inline-flex; align-items: center; gap: 6px; }
 
@@ -181,9 +185,9 @@ button:hover { background: #243456; border-color: #95aff75f; }
   font-size: 10px;
   font-weight: 800;
   letter-spacing: .35px;
-  color: #dce8ff;
-  background: linear-gradient(120deg, #4f6fcd, #6e4fd2);
-  border: 1px solid #90abff66;
+  color: #fff1f5;
+  background: linear-gradient(120deg, #ff4f7c, #d33662);
+  border: 1px solid rgba(255, 148, 170, .55);
   border-radius: 999px;
   padding: 1px 8px;
 }
@@ -215,6 +219,7 @@ button:hover { background: #243456; border-color: #95aff75f; }
   flex-direction: column;
   min-height: 0;
   border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, #120a10, #0f090e);
 }
 
 .topbar {
@@ -243,20 +248,20 @@ button:hover { background: #243456; border-color: #95aff75f; }
   align-items: flex-start;
   gap: 10px;
   background:
-    radial-gradient(700px 260px at 100% 0%, #4468d81c 0%, transparent 70%),
-    linear-gradient(180deg, #111a31, #0f1628);
+    radial-gradient(760px 320px at 100% 0%, #ff4f7f1e 0%, transparent 72%),
+    linear-gradient(180deg, #161018, #120d14);
 }
 
 .message {
   width: fit-content;
   max-width: 72%;
   padding: 11px 12px;
-  border: 1px solid #7f98dc42;
+  border: 1px solid rgba(255, 122, 152, .35);
   border-radius: 14px;
-  background: linear-gradient(180deg, #182645, #15213b);
+  background: linear-gradient(180deg, #2a131d, #21101a);
 }
 
-.message.mine { align-self: flex-end; background: linear-gradient(180deg, #2a4b8d, #253f77); border-color: #84a7ff7f; }
+.message.mine { align-self: flex-end; background: linear-gradient(180deg, #5f1f34, #4a192a); border-color: rgba(255, 122, 152, .7); }
 
 .meta {
   font-size: 12px;
@@ -313,8 +318,8 @@ button:hover { background: #243456; border-color: #95aff75f; }
   min-width: 160px;
   padding: 6px;
   border-radius: 10px;
-  border: 1px solid #88a4ec5f;
-  background: #0f1830;
+  border: 1px solid rgba(255, 122, 152, .45);
+  background: #1c0f18;
   box-shadow: 0 14px 30px rgba(0, 0, 0, .45);
   display: grid;
   gap: 4px;
@@ -337,8 +342,8 @@ button:hover { background: #243456; border-color: #95aff75f; }
   position: fixed;
   right: 22px;
   bottom: 22px;
-  background: #1f2c4b;
-  border: 1px solid #8ba7f15f;
+  background: #2a121c;
+  border: 1px solid rgba(255, 122, 152, .55);
   color: var(--text);
   padding: 10px 12px;
   border-radius: 10px;
