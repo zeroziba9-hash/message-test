@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
-    --panel: rgba(14, 20, 38, .8);
-    --panel-2: rgba(16, 24, 44, .92);
-    --line: rgba(149, 171, 255, 0.22);
-    --line-strong: rgba(161, 182, 255, 0.4);
+    --panel: rgba(14, 20, 38, .82);
+    --panel-2: rgba(16, 24, 44, .94);
+    --line: rgba(149, 171, 255, 0.24);
+    --line-strong: rgba(161, 182, 255, 0.42);
     --text: #eaf1ff;
     --muted: #9baed8;
     --accent: #77a2ff;
@@ -12,6 +12,8 @@
     --ok: #65f3a7;
     --danger: #ff758f;
     --shadow: 0 28px 70px rgba(3, 8, 20, 0.65);
+    --radius: 12px;
+    --gap: 10px;
 }
 
 * { box-sizing: border-box; }
@@ -52,6 +54,8 @@ body {
     border-right: 1px solid var(--line);
     display: flex;
     flex-direction: column;
+    padding: var(--gap);
+    gap: var(--gap);
 }
 
 .rightbar {
@@ -62,16 +66,20 @@ body {
 .rightbar-title {
     font-weight: 700;
     margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
 }
 
 .brand {
     font: 700 21px/1.2 'Space Grotesk', Inter, sans-serif;
     letter-spacing: .4px;
-    padding: 18px;
-    border-bottom: 1px solid var(--line);
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
     display: flex;
     align-items: center;
     gap: 10px;
+    background: linear-gradient(180deg, #ffffff07, #00000008);
 }
 
 .brand::before {
@@ -84,9 +92,10 @@ body {
 }
 
 .section {
-    padding: 10px 11px;
-    border-bottom: 1px solid #9aaeff1a;
-    background: linear-gradient(180deg, #ffffff03, #00000008);
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, #ffffff06, #00000010);
 }
 
 input, button, textarea, select { font: inherit; }
@@ -98,18 +107,24 @@ input, button, textarea, select { font: inherit; }
     margin-bottom: 7px;
 }
 
-input, textarea, select {
+input, textarea, select, .nickname-value {
     width: 100%;
     border: 1px solid #95a8dd33;
     background: #0b1224;
     color: var(--text);
     border-radius: 10px;
-    padding: 9px 10px;
+    padding: 10px 11px;
     outline: none;
     transition: .18s ease;
 }
 
-input:hover, textarea:hover, select:hover { border-color: #8ca5ec66; }
+.nickname-value {
+    font-weight: 700;
+}
+
+input:hover, textarea:hover, select:hover {
+    border-color: #8ca5ec66;
+}
 
 input:focus, textarea:focus, select:focus {
     border-color: var(--accent);
@@ -142,7 +157,7 @@ button:hover {
 }
 
 .profile-actions {
-    margin-top: 8px;
+    margin-top: 10px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
@@ -154,9 +169,10 @@ button:hover {
 }
 
 .fixed-room .room-fixed-name {
-    font-size: 16px;
+    font-size: 28px;
     font-weight: 800;
     letter-spacing: -.2px;
+    line-height: 1.1;
 }
 
 .list-title {
@@ -187,7 +203,8 @@ button:hover {
     margin-bottom: 8px;
 }
 
-.channels, .online-users {
+.channels,
+.online-users {
     max-height: 420px;
     overflow: auto;
 }
@@ -195,7 +212,7 @@ button:hover {
 .channel-item {
     width: 100%;
     text-align: left;
-    padding: 8px 10px;
+    padding: 9px 10px;
     margin-bottom: 6px;
     background: transparent;
     border: 1px solid transparent;
@@ -214,7 +231,10 @@ button:hover {
     border-color: #5d7ed6;
 }
 
-.action-buttons { display: grid; gap: 8px; }
+.action-buttons {
+    display: grid;
+    gap: 8px;
+}
 
 .admin-panel {
     background: linear-gradient(180deg, #121a30, #101728);
@@ -246,10 +266,22 @@ button:hover {
 .hidden { display: none !important; }
 .admin-only.hidden { display: none !important; }
 
-.checkbox { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+}
+
 .checkbox input { width: auto; }
 
-.online-user { display: flex; align-items: center; gap: 8px; padding: 6px 2px; }
+.online-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 3px;
+}
+
 .user-dot {
     width: 9px;
     height: 9px;
@@ -257,12 +289,18 @@ button:hover {
     background: var(--ok);
     box-shadow: 0 0 10px #65f3a7aa;
 }
-.empty { color: var(--muted); font-size: 12px; padding: 6px 0; }
+
+.empty {
+    color: var(--muted);
+    font-size: 12px;
+    padding: 6px 0;
+}
 
 .main {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    border-right: 1px solid var(--line);
 }
 
 .topbar {
@@ -340,10 +378,10 @@ button:hover {
 }
 
 .meta .sender {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     color: #f1f6ff;
-    letter-spacing: -.2px;
+    letter-spacing: -.25px;
 }
 
 .content {
@@ -367,7 +405,11 @@ button:hover {
     resize: vertical;
 }
 
-.hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+}
 
 .toast {
     position: fixed;
@@ -406,7 +448,11 @@ button:hover {
     border-radius: 8px;
 }
 
-.message-menu button:hover { transform: none; background: #24355f; }
+.message-menu button:hover {
+    transform: none;
+    background: #24355f;
+}
+
 .message-menu .danger { color: #ff9aaf; }
 
 @keyframes popIn {

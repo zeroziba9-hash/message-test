@@ -17,7 +17,7 @@
 
             <div class="section profile-box">
                 <div class="label">내 닉네임</div>
-                <input id="sender" value="사용자1" />
+                <div id="nicknameValue" class="nickname-value">사용자1</div>
                 <div class="hint" id="roleLabel">역할: MEMBER</div>
                 <div class="profile-actions">
                     <button id="editProfileBtn">내 정보 수정</button>
@@ -106,7 +106,7 @@
         let currentChannel = DEFAULT_CHANNEL;
 
         const appRootEl = document.getElementById("appRoot");
-        const senderEl = document.getElementById("sender");
+        const nicknameValueEl = document.getElementById("nicknameValue");
         const contentEl = document.getElementById("content");
         const messagesEl = document.getElementById("messages");
         const roomTitleEl = document.getElementById("roomTitle");
@@ -123,13 +123,14 @@
         const manageModeEl = document.getElementById("manageMode");
         const adminAddRowEl = document.getElementById("adminAddRow");
         const newChannelNameEl = document.getElementById("newChannelName");
+        const adminTargetUserEl = document.getElementById("adminTargetUser");
 
         let currentRole = "MEMBER";
         let selectedMessageId = null;
         let dragChannel = null;
+        let currentNickname = localStorage.getItem('chat.nickname') || "사용자1";
 
-        const savedNickname = localStorage.getItem('chat.nickname');
-        if (savedNickname) senderEl.value = savedNickname;
+        applyNickname(currentNickname);
 
         document.getElementById("sendBtn").addEventListener("click", sendMsg);
         document.getElementById("setRoleBtn").addEventListener("click", setUserRole);
@@ -159,7 +160,13 @@
             setTimeout(() => toast.remove(), 2200);
         }
 
-        function sender() { return senderEl.value.trim(); }
+        function applyNickname(name) {
+            currentNickname = name.trim();
+            nicknameValueEl.textContent = currentNickname;
+            adminTargetUserEl.value = currentNickname;
+        }
+
+        function sender() { return currentNickname; }
 
         function setStatus(connected, label = null) {
             statusTextEl.textContent = label || (connected ? "연결됨" : "연결 끊김");
@@ -245,7 +252,7 @@
 
         function connect() {
             if (!sender()) {
-                showToast('닉네임을 먼저 입력해 주세요.');
+                showToast('닉네임이 없습니다. 내 정보 수정에서 설정해 주세요.');
                 return;
             }
 
@@ -412,7 +419,7 @@
         }
 
         async function setUserRole() {
-            const target = document.getElementById("adminTargetUser").value.trim();
+            const target = adminTargetUserEl.value.trim();
             const role = document.getElementById("adminRole").value;
             if (!target) return;
 
@@ -444,9 +451,10 @@
         function editProfile() {
             const next = prompt("새 닉네임을 입력하세요.", sender());
             if (!next || !next.trim()) return;
-            senderEl.value = next.trim();
+            applyNickname(next);
             localStorage.setItem('chat.nickname', sender());
             refreshAccess();
+            loadOnlineUsers();
             showToast("닉네임이 변경되었습니다.");
         }
 
