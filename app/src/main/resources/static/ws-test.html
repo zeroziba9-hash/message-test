@@ -11,7 +11,7 @@
 </head>
 
 <body>
-    <div class="app">
+    <div class="app" id="appRoot">
         <aside class="sidebar">
             <div class="brand">Message Test</div>
 
@@ -96,6 +96,7 @@
         let stompClient = null;
         let currentChannel = "general";
 
+        const appRootEl = document.getElementById("appRoot");
         const senderEl = document.getElementById("sender");
         const channelEl = document.getElementById("channel");
         const contentEl = document.getElementById("content");
@@ -222,6 +223,7 @@
                 const access = await res.json();
                 currentRole = access.role || "MEMBER";
                 roleLabelEl.textContent = `역할: ${currentRole}`;
+                appRootEl.classList.toggle("is-admin", currentRole === "ADMIN");
                 permLabelEl.textContent = `권한: ${access.canRead ? "읽기 가능" : "읽기 불가"} / ${access.canWrite ? "쓰기 가능" : "쓰기 불가"}`;
                 document.getElementById("canRead").checked = access.canRead;
                 document.getElementById("canWrite").checked = access.canWrite;
