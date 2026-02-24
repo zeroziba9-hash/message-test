@@ -871,15 +871,34 @@
         .replaceAll("'", "&#39;");
     }
 
-    updateRoomTitle();
-    loadChannels();
-    refreshAccess();
-    connect();
+    function tryRenderDemoScene() {
+      const mode = new URLSearchParams(window.location.search).get("demo");
+      if (!mode) return false;
 
-    setInterval(async () => {
-      await refreshUnreadBadges();
-      await loadChannels();
-    }, 5000);
+      updateRoomTitle();
+      setStatus(true, "데모 모드");
+      clearMessages();
+
+      if (mode === "link") {
+        renderMessage({ sender: "관리자", content: "하이퍼링크 테스트\nhttps://youtu.be/dQw4w9WgXcQ", sentAt: new Date() }, true);
+      } else {
+        renderMessage({ sender: "시스템", content: `알 수 없는 demo 모드: ${mode}`, sentAt: new Date() }, false);
+      }
+
+      return true;
+    }
+
+    if (!tryRenderDemoScene()) {
+      updateRoomTitle();
+      loadChannels();
+      refreshAccess();
+      connect();
+
+      setInterval(async () => {
+        await refreshUnreadBadges();
+        await loadChannels();
+      }, 5000);
+    }
   </script>
 </body>
 </html>

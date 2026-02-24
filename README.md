@@ -149,10 +149,20 @@ function handleRealtimeEvent(msg) {
 ```
 
 ## Screenshots
-### 채팅 동작 화면
-![chat-main](docs/screenshots/chat-main.png)
+### 1) 로그인 화면
+![login-page](docs/screenshots/login-page.png)
 
-### 실시간 삭제 처리 코드 캡처
+### 2) 회원가입 화면
+![signup-page](docs/screenshots/signup-page.png)
+
+### 3) 채팅 테스트 화면
+![ws-test-page](docs/screenshots/ws-test-page.png)
+
+### 4) 하이퍼링크(YouTube 프리뷰) 테스트 화면
+- 재현 URL: `http://localhost:8080/ws-test.html?demo=link`
+![hyperlink-test](docs/screenshots/hyperlink-test.png)
+
+### 5) 실시간 삭제 처리 코드 캡처
 ![code-realtime-delete](docs/screenshots/code-realtime-delete.png)
 
 ## Test
