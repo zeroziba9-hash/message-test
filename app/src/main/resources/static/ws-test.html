@@ -576,7 +576,8 @@
       event.preventDefault();
       event.stopPropagation();
 
-      const actionEl = event.target?.closest?.("button[data-action]");
+      const clickEl = event.target instanceof Element ? event.target : event.target?.parentElement;
+      const actionEl = clickEl?.closest?.("button[data-action]");
       const action = actionEl?.dataset?.action;
       const targetMessage = selectedMessage;
       if (!action || !targetMessage?.id) {
@@ -628,7 +629,8 @@
       event.preventDefault();
       event.stopPropagation();
 
-      const roleEl = event.target?.closest?.("button[data-role]");
+      const clickEl = event.target instanceof Element ? event.target : event.target?.parentElement;
+      const roleEl = clickEl?.closest?.("button[data-role]");
       const role = roleEl?.dataset?.role;
       const targetUser = selectedUser;
       if (!role || !targetUser) {
