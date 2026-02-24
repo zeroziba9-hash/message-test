@@ -10,7 +10,7 @@ public class ChatSendRequest {
     private String sender;
 
     @NotBlank(message = "메시지 내용은 필수입니다.")
-    @Size(max = 500, message = "메시지는 500자 이하여야 합니다.")
+    @Size(max = 5_000_000, message = "메시지는 5,000,000자 이하여야 합니다.")
     private String content;
 
     public ChatSendRequest() {

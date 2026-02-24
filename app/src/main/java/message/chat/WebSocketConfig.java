@@ -5,6 +5,7 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -24,5 +25,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws").setAllowedOriginPatterns("*");
         // SockJS 쓰고 싶으면 아래도 추가 (테스트 HTML에 sockjs 쓰면 편함)
         registry.addEndpoint("/ws").setAllowedOriginPatterns("*").withSockJS();
+    }
+
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
+        // data URL(base64 이미지) 전송을 위해 기본 한도를 늘림
+        registry.setMessageSizeLimit(5 * 1024 * 1024);
+        registry.setSendBufferSizeLimit(5 * 1024 * 1024);
+        registry.setSendTimeLimit(20_000);
     }
 }
