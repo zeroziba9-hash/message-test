@@ -180,7 +180,8 @@
       const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : new Date().toLocaleTimeString();
       const rawContent = msg.content || "";
       const imageUrl = extractImageUrl(rawContent);
-      const textOnly = imageUrl ? "" : escapeHtml(rawContent);
+      const firstUrl = imageUrl ? null : extractFirstUrl(rawContent);
+      const textOnly = imageUrl ? "" : linkifyText(rawContent);
 
       wrap.innerHTML = `
         <div class="meta">
@@ -190,13 +191,17 @@
         <div class="content">${textOnly}</div>
       `;
 
+      const contentBodyEl = wrap.querySelector(".content");
+
       if (imageUrl) {
         const img = document.createElement("img");
         img.className = "chat-image";
         img.src = imageUrl;
         img.alt = "업로드 이미지";
         img.loading = "lazy";
-        wrap.querySelector(".content")?.appendChild(img);
+        contentBodyEl?.appendChild(img);
+      } else if (firstUrl && contentBodyEl) {
+        appendLinkPreview(contentBodyEl, firstUrl);
       }
 
       wrap.addEventListener("contextmenu", (event) => {
@@ -669,6 +674,69 @@
       if (!content.startsWith("[img]")) return null;
       const url = content.slice(5).trim();
       return url.startsWith("data:image/") ? url : null;
+    }
+
+    function extractFirstUrl(content) {
+      if (typeof content !== "string") return null;
+      const match = content.match(/https?:\/\/[^\s]+/i);
+      if (!match) return null;
+      try {
+        return new URL(match[0]).toString();
+      } catch {
+        return null;
+      }
+    }
+
+    function linkifyText(content) {
+      const escaped = escapeHtml(content || "");
+      return escaped.replace(/(https?:\/\/[^\s<]+)/gi, (url) => {
+        const safeUrl = url.replaceAll('"', '&quot;');
+        return `<a class="chat-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+      });
+    }
+
+    function appendLinkPreview(parentEl, url) {
+      const parsed = parseYouTubeUrl(url);
+      if (!parsed) return;
+
+      const card = document.createElement("a");
+      card.className = "link-preview";
+      card.href = url;
+      card.target = "_blank";
+      card.rel = "noopener noreferrer";
+
+      const thumb = document.createElement("img");
+      thumb.className = "link-preview-thumb";
+      thumb.alt = "video thumbnail";
+      thumb.loading = "lazy";
+      thumb.src = `https://img.youtube.com/vi/${parsed.id}/hqdefault.jpg`;
+
+      const body = document.createElement("div");
+      body.className = "link-preview-body";
+      body.innerHTML = `
+        <div class="link-preview-title">YouTube 미리보기</div>
+        <div class="link-preview-url">${escapeHtml(parsed.watchUrl)}</div>
+      `;
+
+      card.appendChild(thumb);
+      card.appendChild(body);
+      parentEl.appendChild(card);
+    }
+
+    function parseYouTubeUrl(url) {
+      try {
+        const u = new URL(url);
+        if (u.hostname.includes("youtu.be")) {
+          const id = u.pathname.replace("/", "").trim();
+          return id ? { id, watchUrl: `https://www.youtube.com/watch?v=${id}` } : null;
+        }
+
+        if (u.hostname.includes("youtube.com")) {
+          const id = u.searchParams.get("v");
+          return id ? { id, watchUrl: `https://www.youtube.com/watch?v=${id}` } : null;
+        }
+      } catch {}
+      return null;
     }
 
     function escapeHtml(str) {

@@ -354,6 +354,48 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   border: 1px solid #8aa5ea55;
 }
 
+.chat-link {
+  color: #9fc2ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-preview {
+  margin-top: 8px;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(138, 165, 234, .35);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(11, 14, 22, .7);
+  max-width: min(420px, 65vw);
+}
+
+.link-preview-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+
+.link-preview-body {
+  padding: 8px 10px;
+}
+
+.link-preview-title {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.link-preview-url {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .menu {
   position: fixed;
   z-index: 120;
