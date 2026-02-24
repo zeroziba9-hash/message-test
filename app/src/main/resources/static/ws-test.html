@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
@@ -14,32 +14,32 @@
       <div class="brand">Message Test</div>
 
       <div class="section profile-box">
-        <div class="label">내 닉네임</div>
-        <div id="nicknameValue" class="nickname-value">사용자1</div>
-        <div class="hint" id="roleLabel">역할: MEMBER</div>
+        <div class="label">???됰꽕??/div>
+        <div id="nicknameValue" class="nickname-value">?ъ슜??</div>
+        <div class="hint" id="roleLabel">??븷: MEMBER</div>
         <div class="profile-actions">
-          <button id="editProfileBtn">내 정보 수정</button>
-          <button id="logoutBtn" class="danger-soft">로그아웃</button>
+          <button id="editProfileBtn">???뺣낫 ?섏젙</button>
+          <button id="logoutBtn" class="danger-soft">濡쒓렇?꾩썐</button>
         </div>
       </div>
 
       <div class="section fixed-room">
-        <div class="label">기본 채팅</div>
-        <div class="room-fixed-name">자유채팅방</div>
-        <div class="hint" id="permLabel">권한: 읽기 가능 / 쓰기 가능</div>
+        <div class="label">湲곕낯 梨꾪똿</div>
+        <div class="room-fixed-name">?먯쑀梨꾪똿諛?/div>
+        <div class="hint" id="permLabel">沅뚰븳: ?쎄린 媛??/ ?곌린 媛??/div>
       </div>
 
       <div class="section list-section">
         <div class="list-title with-actions">
-          <span>채팅방</span>
+          <span>梨꾪똿諛?/span>
           <label class="mini-toggle admin-only hidden" id="manageModeWrap">
-            <input type="checkbox" id="manageMode" /> 관리모드
+            <input type="checkbox" id="manageMode" /> 愿由щえ??
           </label>
         </div>
 
         <div class="admin-add-row admin-only hidden" id="adminAddRow">
-          <input id="newChannelName" placeholder="새 채팅방 이름" />
-          <button id="addChannelBtn" class="btn-primary">추가</button>
+          <input id="newChannelName" placeholder="??梨꾪똿諛??대쫫" />
+          <button id="addChannelBtn" class="btn-primary">異붽?</button>
         </div>
 
         <div class="channels" id="channelList"></div>
@@ -48,46 +48,46 @@
 
     <main class="main">
       <header class="topbar">
-        <h1 id="roomTitle"># 자유채팅방</h1>
-        <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">연결 끊김</span></div>
+        <h1 id="roomTitle"># ?먯쑀梨꾪똿諛?/h1>
+        <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">?곌껐 ?딄?</span></div>
       </header>
 
       <section class="messages" id="messages"></section>
 
       <footer class="composer">
         <div>
-          <textarea id="content" placeholder="메시지를 입력하세요 (Enter 전송 / Shift+Enter 줄바꿈)"></textarea>
+          <textarea id="content" placeholder="硫붿떆吏瑜??낅젰?섏꽭??(Enter ?꾩넚 / Shift+Enter 以꾨컮轅?"></textarea>
           <div class="composer-tools">
-            <button id="imageBtn" class="icon-btn" title="이미지 업로드" type="button">🖼️</button>
-            <span class="hint">Enter: 전송 · Shift+Enter: 줄바꿈</span>
+            <button id="imageBtn" class="icon-btn" title="?대?吏 ?낅줈?? type="button">?뼹截?/button>
+            <span class="hint">Enter: ?꾩넚 쨌 Shift+Enter: 以꾨컮轅?/span>
           </div>
           <input id="imageInput" type="file" accept="image/*" class="hidden" />
         </div>
-        <button id="sendBtn" class="btn-primary">전송</button>
+        <button id="sendBtn" class="btn-primary">?꾩넚</button>
       </footer>
     </main>
 
     <aside class="rightbar" id="rightbar">
-      <div class="rightbar-title">접속 중 <span id="onlineCount">0</span>명</div>
+      <div class="rightbar-title">?묒냽 以?<span id="onlineCount">0</span>紐?/div>
       <div class="online-users" id="onlineUsers"></div>
     </aside>
   </div>
 
   <div id="messageContextMenu" class="menu hidden">
-    <button data-action="edit">메시지 수정</button>
-    <button data-action="delete" class="danger">메시지 삭제</button>
+    <button data-action="edit">硫붿떆吏 ?섏젙</button>
+    <button data-action="delete" class="danger">硫붿떆吏 ??젣</button>
   </div>
 
   <div id="userContextMenu" class="menu hidden">
-    <button data-role="ADMIN">ADMIN으로 변경</button>
-    <button data-role="MODERATOR">MODERATOR로 변경</button>
-    <button data-role="MEMBER">MEMBER로 변경</button>
-    <button data-role="GUEST">GUEST로 변경</button>
+    <button data-role="ADMIN">ADMIN?쇰줈 蹂寃?/button>
+    <button data-role="MODERATOR">MODERATOR濡?蹂寃?/button>
+    <button data-role="MEMBER">MEMBER濡?蹂寃?/button>
+    <button data-role="GUEST">GUEST濡?蹂寃?/button>
   </div>
 
   <script>
     let stompClient = null;
-    const DEFAULT_CHANNEL = "자유채팅방";
+    const DEFAULT_CHANNEL = "?먯쑀梨꾪똿諛?;
     let currentChannel = DEFAULT_CHANNEL;
 
     const appRootEl = document.getElementById("appRoot");
@@ -122,11 +122,11 @@
       || localStorage.getItem("chat.nickname")
       || sessionStorage.getItem("chat.username")
       || localStorage.getItem("chat.username")
-      || "사용자1";
+      || "?ъ슜??";
     sessionStorage.setItem("chat.nickname", storedNickname);
 
     if (!username()) {
-      alert("로그인이 필요합니다.");
+      alert("濡쒓렇?몄씠 ?꾩슂?⑸땲??");
       window.location.href = "/login.html";
     }
 
@@ -197,7 +197,7 @@
 
     function applyNickname(name) {
       currentNickname = (name || "").trim();
-      nicknameValueEl.textContent = currentNickname || "(닉네임 없음)";
+      nicknameValueEl.textContent = currentNickname || "(?됰꽕???놁쓬)";
 
       const aliases = readNicknameAliases();
       aliases.push(currentNickname);
@@ -210,7 +210,7 @@
     }
 
     function setStatus(connected, label = null) {
-      statusTextEl.textContent = label || (connected ? "연결됨" : "연결 끊김");
+      statusTextEl.textContent = label || (connected ? "?곌껐?? : "?곌껐 ?딄?");
       statusDotEl.classList.toggle("ok", connected);
     }
 
@@ -236,7 +236,7 @@
 
       const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : new Date().toLocaleTimeString();
       const rawContent = msg.content || "";
-      const isSystem = (msg.sender || "") === "시스템";
+      const isSystem = (msg.sender || "") === "?쒖뒪??;
       if (isSystem) wrap.classList.add("system");
       const imageUrl = extractImageUrl(rawContent);
       const firstUrl = imageUrl ? null : extractFirstUrl(rawContent);
@@ -244,7 +244,7 @@
 
       wrap.innerHTML = `
         <div class="meta">
-          <strong class="sender">${escapeHtml(msg.sender || "알수없음")}</strong>
+          <strong class="sender">${escapeHtml(msg.sender || "?뚯닔?놁쓬")}</strong>
           <span class="sent-at">${escapeHtml(sentAt)}</span>
         </div>
         <div class="content">${textOnly}</div>
@@ -254,8 +254,8 @@
         const menuBtn = document.createElement("button");
         menuBtn.type = "button";
         menuBtn.className = "msg-menu-btn";
-        menuBtn.textContent = "⋮";
-        menuBtn.title = "메시지 메뉴";
+        menuBtn.textContent = "??;
+        menuBtn.title = "硫붿떆吏 硫붾돱";
         menuBtn.addEventListener("click", (event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -269,7 +269,7 @@
       const senderEl = wrap.querySelector(".sender");
       if (currentRole === "ADMIN" && senderEl && msg.sender) {
         senderEl.style.cursor = "context-menu";
-        senderEl.title = "우클릭: 사용자 권한 변경";
+        senderEl.title = "?고겢由? ?ъ슜??沅뚰븳 蹂寃?;
         senderEl.addEventListener("contextmenu", (event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -284,7 +284,7 @@
         const img = document.createElement("img");
         img.className = "chat-image";
         img.src = imageUrl;
-        img.alt = "업로드 이미지";
+        img.alt = "?낅줈???대?吏";
         img.loading = "lazy";
         contentBodyEl?.appendChild(img);
       } else if (firstUrl && contentBodyEl) {
@@ -360,7 +360,7 @@
       if (users.length === 0) {
         const empty = document.createElement("div");
         empty.className = "empty";
-        empty.textContent = "접속 중인 사용자가 없습니다.";
+        empty.textContent = "?묒냽 以묒씤 ?ъ슜?먭? ?놁뒿?덈떎.";
         onlineUsersEl.appendChild(empty);
         return;
       }
@@ -398,10 +398,19 @@
     async function refreshAccess() {
       if (!sender()) return;
       try {
-        const res = await fetch(`/api/access/${encodeURIComponent(currentChannel)}?sender=${encodeURIComponent(username())}`);
+        const accountId = username();
+        const res = await fetch(`/api/access/${encodeURIComponent(currentChannel)}?sender=${encodeURIComponent(accountId)}`);
         if (!res.ok) return;
         const body = await res.json().catch(() => ({}));
         const access = unwrapApiPayload(body, {});
+
+        // Root admin safety in UI
+        if ((accountId || "").toLowerCase() === "admin1234") {
+          access.role = "ADMIN";
+          access.canRead = true;
+          access.canWrite = true;
+        }
+
         currentRole = access.role || "MEMBER";
         roleLabelEl.textContent = `역할: ${currentRole}`;
         appRootEl.classList.toggle("is-admin", currentRole === "ADMIN");
@@ -410,10 +419,9 @@
         adminAddRowEl.classList.toggle("hidden", currentRole !== "ADMIN");
       } catch {}
     }
-
     function connect() {
       if (!sender()) {
-        showToast("닉네임이 없습니다. 내 정보 수정에서 설정해 주세요.");
+        showToast("?됰꽕?꾩씠 ?놁뒿?덈떎. ???뺣낫 ?섏젙?먯꽌 ?ㅼ젙??二쇱꽭??");
         return;
       }
 
@@ -423,7 +431,7 @@
         stompClient.disconnect(() => setStatus(false));
       }
 
-      setStatus(false, "연결 중...");
+      setStatus(false, "?곌껐 以?..");
       const socket = new SockJS("/ws");
       stompClient = Stomp.over(socket);
       stompClient.debug = null;
@@ -453,7 +461,7 @@
         await loadOnlineUsers();
       }, () => {
         setStatus(false);
-        showToast("연결에 실패했습니다. 서버 상태를 확인해 주세요.");
+        showToast("?곌껐???ㅽ뙣?덉뒿?덈떎. ?쒕쾭 ?곹깭瑜??뺤씤??二쇱꽭??");
       });
     }
 
@@ -467,8 +475,8 @@
       if (!sender() || !text) return;
 
       await refreshAccess();
-      if (!permLabelEl.textContent.includes("쓰기 가능")) {
-        showToast("이 채널에 쓰기 권한이 없습니다.");
+      if (!permLabelEl.textContent.includes("?곌린 媛??)) {
+        showToast("??梨꾨꼸???곌린 沅뚰븳???놁뒿?덈떎.");
         return;
       }
 
@@ -484,7 +492,7 @@
         const data = unwrapApiPayload(body, []);
         if (!res.ok) {
           clearMessages();
-          renderMessage({ sender: "시스템", content: extractErrorMessage(body, "대화 기록 로드 실패"), sentAt: new Date() }, false);
+          renderMessage({ sender: "?쒖뒪??, content: extractErrorMessage(body, "???湲곕줉 濡쒕뱶 ?ㅽ뙣"), sentAt: new Date() }, false);
           return;
         }
         clearMessages();
@@ -492,7 +500,7 @@
         markChannelSeen(currentChannel, data);
         await refreshUnreadBadges();
       } catch {
-        showToast("대화 기록을 불러오지 못했습니다.");
+        showToast("???湲곕줉??遺덈윭?ㅼ? 紐삵뻽?듬땲??");
       }
     }
 
@@ -545,7 +553,7 @@
           channelListEl.appendChild(btn);
         });
       } catch {
-        showToast("채널 목록을 불러오지 못했습니다.");
+        showToast("梨꾨꼸 紐⑸줉??遺덈윭?ㅼ? 紐삵뻽?듬땲??");
       }
     }
 
@@ -586,13 +594,13 @@
       const res = await fetch(`/api/admin/channels?sender=${encodeURIComponent(username())}&channelId=${encodeURIComponent(channelName)}`, { method: "POST" });
       const data = await res.json().catch(() => ([]));
       if (!res.ok) {
-        showToast(extractErrorMessage(data, "채널 추가 실패"));
+        showToast(extractErrorMessage(data, "梨꾨꼸 異붽? ?ㅽ뙣"));
         return;
       }
 
       newChannelNameEl.value = "";
       await loadChannels();
-      showToast(`채널 #${channelName} 추가 완료`);
+      showToast(`梨꾨꼸 #${channelName} 異붽? ?꾨즺`);
     }
 
     async function reorderChannels(nextOrder) {
@@ -604,7 +612,7 @@
 
       const data = await res.json().catch(() => ([]));
       if (!res.ok) {
-        showToast(extractErrorMessage(data, "채널 순서 변경 실패"));
+        showToast(extractErrorMessage(data, "梨꾨꼸 ?쒖꽌 蹂寃??ㅽ뙣"));
         return;
       }
       await loadChannels();
@@ -620,15 +628,15 @@
         }
         renderPresence(unwrapApiPayload(data, {}));
       } catch {
-        showToast("온라인 사용자 목록 조회 실패");
+        showToast("?⑤씪???ъ슜??紐⑸줉 議고쉶 ?ㅽ뙣");
       }
     }
 
     function editProfile() {
-      const next = prompt("새 닉네임을 입력하세요.", sender());
+      const next = prompt("???됰꽕?꾩쓣 ?낅젰?섏꽭??", sender());
       if (!next || !next.trim()) return;
-      if (next.trim() === "관리자") {
-        showToast("'관리자' 닉네임은 사용할 수 없습니다.");
+      if (next.trim() === "愿由ъ옄") {
+        showToast("'愿由ъ옄' ?됰꽕?꾩? ?ъ슜?????놁뒿?덈떎.");
         return;
       }
       const before = sender();
@@ -648,7 +656,7 @@
       refreshAccess();
       loadOnlineUsers();
       loadChannels();
-      showToast("닉네임이 변경되었습니다.");
+      showToast("?됰꽕?꾩씠 蹂寃쎈릺?덉뒿?덈떎.");
     }
 
     function logout() {
@@ -696,7 +704,7 @@
       }
 
       if (action === "edit") {
-        const next = prompt("수정할 메시지 내용을 입력하세요.", targetMessage.content || "");
+        const next = prompt("?섏젙??硫붿떆吏 ?댁슜???낅젰?섏꽭??", targetMessage.content || "");
         if (!next || !next.trim()) return hideMenus();
 
         const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages/${targetMessage.id}?sender=${encodeURIComponent(sender())}&actor=${encodeURIComponent(username())}`, {
@@ -707,16 +715,16 @@
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
-          showToast(extractErrorMessage(errorData, "메시지 수정 실패"));
+          showToast(extractErrorMessage(errorData, "硫붿떆吏 ?섏젙 ?ㅽ뙣"));
           return hideMenus();
         }
 
-        // 실시간 브로드캐스트로 화면이 갱신되므로 전체 히스토리 재로딩은 생략
-        showToast("메시지 수정 완료");
+        // ?ㅼ떆媛?釉뚮줈?쒖틦?ㅽ듃濡??붾㈃??媛깆떊?섎?濡??꾩껜 ?덉뒪?좊━ ?щ줈?⑹? ?앸왂
+        showToast("硫붿떆吏 ?섏젙 ?꾨즺");
       }
 
       if (action === "delete") {
-        if (!confirm(`메시지 #${targetMessage.id}를 삭제할까요?`)) return hideMenus();
+        if (!confirm(`硫붿떆吏 #${targetMessage.id}瑜???젣?좉퉴??`)) return hideMenus();
 
         const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages/${targetMessage.id}?sender=${encodeURIComponent(sender())}&actor=${encodeURIComponent(username())}`, {
           method: "DELETE"
@@ -724,13 +732,13 @@
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
-          showToast(extractErrorMessage(errorData, "메시지 삭제 실패"));
+          showToast(extractErrorMessage(errorData, "硫붿떆吏 ??젣 ?ㅽ뙣"));
           return hideMenus();
         }
 
-        // 실시간 삭제 이벤트가 오면 해당 메시지 제거 + 시스템 안내를 렌더링함
-        // (여기서 loadHistory를 호출하면 시스템 안내가 즉시 사라질 수 있음)
-        showToast("메시지 삭제 완료");
+        // ?ㅼ떆媛???젣 ?대깽?멸? ?ㅻ㈃ ?대떦 硫붿떆吏 ?쒓굅 + ?쒖뒪???덈궡瑜??뚮뜑留곹븿
+        // (?ш린??loadHistory瑜??몄텧?섎㈃ ?쒖뒪???덈궡媛 利됱떆 ?щ씪吏????덉쓬)
+        showToast("硫붿떆吏 ??젣 ?꾨즺");
       }
 
       hideMenus();
@@ -751,11 +759,11 @@
 
       const res = await fetch(`/api/admin/users/${encodeURIComponent(targetUser)}/role?actor=${encodeURIComponent(username())}&role=${encodeURIComponent(role)}`, { method: "POST" });
       if (!res.ok) {
-        showToast("권한 변경 실패");
+        showToast("沅뚰븳 蹂寃??ㅽ뙣");
         return hideMenus();
       }
 
-      showToast(`${targetUser} 역할을 ${role}로 변경했습니다.`);
+      showToast(`${targetUser} ??븷??${role}濡?蹂寃쏀뻽?듬땲??`);
       await refreshAccess();
       await loadOnlineUsers();
       hideMenus();
@@ -766,14 +774,14 @@
       if (!file) return;
 
       if (!file.type.startsWith("image/")) {
-        showToast("이미지 파일만 업로드할 수 있습니다.");
+        showToast("?대?吏 ?뚯씪留??낅줈?쒗븷 ???덉뒿?덈떎.");
         imageInputEl.value = "";
         return;
       }
 
       const maxMb = 3;
       if (file.size > maxMb * 1024 * 1024) {
-        showToast(`이미지는 ${maxMb}MB 이하만 업로드 가능합니다.`);
+        showToast(`?대?吏??${maxMb}MB ?댄븯留??낅줈??媛?ν빀?덈떎.`);
         imageInputEl.value = "";
         return;
       }
@@ -787,21 +795,21 @@
 
       if (!stompClient || !stompClient.connected) connect();
       if (!stompClient || !stompClient.connected) {
-        showToast("채널 연결 후 다시 시도해 주세요.");
+        showToast("梨꾨꼸 ?곌껐 ???ㅼ떆 ?쒕룄??二쇱꽭??");
         imageInputEl.value = "";
         return;
       }
 
       await refreshAccess();
-      if (!permLabelEl.textContent.includes("쓰기 가능")) {
-        showToast("이 채널에 쓰기 권한이 없습니다.");
+      if (!permLabelEl.textContent.includes("?곌린 媛??)) {
+        showToast("??梨꾨꼸???곌린 沅뚰븳???놁뒿?덈떎.");
         imageInputEl.value = "";
         return;
       }
 
       stompClient.send(`/pub/channels/${currentChannel}`, {}, JSON.stringify({ sender: sender(), username: username(), content: `[img]${dataUrl}` }));
       imageInputEl.value = "";
-      showToast("이미지 전송 완료");
+      showToast("?대?吏 ?꾩넚 ?꾨즺");
     }
 
     function handleRealtimeEvent(msg) {
@@ -815,18 +823,18 @@
       }
 
       renderMessage({
-        sender: "시스템",
+        sender: "?쒖뒪??,
         sentAt: msg?.sentAt || new Date(),
-        content: `메시지가 ${deletedActor}에 의해 삭제되었습니다.`
+        content: `硫붿떆吏媛 ${deletedActor}???섑빐 ??젣?섏뿀?듬땲??`
       }, false);
       return true;
     }
 
     function extractDeletedEvent(msg) {
-      if (!msg || msg.sender !== "시스템") return null;
+      if (!msg || msg.sender !== "?쒖뒪??) return null;
       const content = String(msg.content || "").trim();
       if (!content.startsWith("[deleted]")) return null;
-      return content.slice(9).trim() || "관리자";
+      return content.slice(9).trim() || "愿由ъ옄";
     }
 
     function extractImageUrl(content) {
@@ -880,7 +888,7 @@
 
       const titleEl = document.createElement("div");
       titleEl.className = "link-preview-title";
-      titleEl.textContent = "불러오는 중...";
+      titleEl.textContent = "遺덈윭?ㅻ뒗 以?..";
 
       const authorEl = document.createElement("div");
       authorEl.className = "link-preview-author";
@@ -909,10 +917,10 @@
         if (!res.ok) throw new Error("oEmbed fetch failed");
 
         const data = await res.json();
-        titleEl.textContent = data?.title?.trim() || "YouTube 영상";
+        titleEl.textContent = data?.title?.trim() || "YouTube ?곸긽";
         authorEl.textContent = data?.author_name?.trim() || "";
       } catch {
-        titleEl.textContent = "YouTube 미리보기";
+        titleEl.textContent = "YouTube 誘몃━蹂닿린";
         authorEl.textContent = "";
       }
     }
@@ -947,13 +955,13 @@
       if (!mode) return false;
 
       updateRoomTitle();
-      setStatus(true, "데모 모드");
+      setStatus(true, "?곕え 紐⑤뱶");
       clearMessages();
 
       if (mode === "link") {
-        renderMessage({ sender: "관리자", content: "하이퍼링크 테스트\nhttps://youtu.be/dQw4w9WgXcQ", sentAt: new Date() }, true);
+        renderMessage({ sender: "愿由ъ옄", content: "?섏씠?쇰쭅???뚯뒪??nhttps://youtu.be/dQw4w9WgXcQ", sentAt: new Date() }, true);
       } else {
-        renderMessage({ sender: "시스템", content: `알 수 없는 demo 모드: ${mode}`, sentAt: new Date() }, false);
+        renderMessage({ sender: "?쒖뒪??, content: `?????녿뒗 demo 紐⑤뱶: ${mode}`, sentAt: new Date() }, false);
       }
 
       return true;
@@ -973,3 +981,5 @@
   </script>
 </body>
 </html>
+
+
