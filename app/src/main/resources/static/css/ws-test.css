@@ -309,6 +309,25 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
 
 .message.mine { align-self: flex-end; background: linear-gradient(180deg, #4a1723, #39121b); border-color: rgba(255, 72, 102, .68); }
 
+.message.system {
+  align-self: center;
+  max-width: 90%;
+  border: 0;
+  background: transparent;
+  padding: 3px 8px;
+}
+
+.message.system .meta {
+  display: none;
+}
+
+.message.system .content {
+  color: #8f949f;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .meta {
   font-size: 12px;
   color: #c3d2f4;

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -166,7 +167,7 @@ public class ChatController {
         String actor = sender.equals(target.getSender()) ? "사용자" : "관리자";
         messagingTemplate.convertAndSend(
                 "/sub/channels/" + channelId,
-                new ChatMessage(0, channelId, "시스템", "메시지 #" + messageId + " 이(가) " + actor + "에 의해 삭제되었습니다.", null));
+                new ChatMessage(messageId, channelId, "시스템", "[deleted]" + actor, Instant.now()));
     }
 
     private void requireAdmin(String sender, String channelId) {

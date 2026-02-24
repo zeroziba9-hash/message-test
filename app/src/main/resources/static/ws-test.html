@@ -179,6 +179,8 @@
 
       const sentAt = msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString() : new Date().toLocaleTimeString();
       const rawContent = msg.content || "";
+      const isSystem = (msg.sender || "") === "시스템";
+      if (isSystem) wrap.classList.add("system");
       const imageUrl = extractImageUrl(rawContent);
       const firstUrl = imageUrl ? null : extractFirstUrl(rawContent);
       const textOnly = imageUrl ? "" : linkifyText(rawContent);
@@ -366,6 +368,9 @@
 
         stompClient.subscribe(`/sub/channels/${currentChannel}`, (frame) => {
           const msg = JSON.parse(frame.body);
+
+          if (handleRealtimeEvent(msg)) return;
+
           const mine = (msg.sender || "") === sender();
           renderMessage(msg, mine);
           if (msg?.id) setSeen(currentChannel, Number(msg.id));
@@ -713,6 +718,31 @@
       stompClient.send(`/pub/channels/${currentChannel}`, {}, JSON.stringify({ sender: sender(), content: `[img]${dataUrl}` }));
       imageInputEl.value = "";
       showToast("이미지 전송 완료");
+    }
+
+    function handleRealtimeEvent(msg) {
+      const deletedActor = extractDeletedEvent(msg);
+      if (!deletedActor) return false;
+
+      const targetId = Number(msg?.id || 0);
+      if (targetId > 0) {
+        const targetEl = messagesEl.querySelector(`[data-message-id="${targetId}"]`);
+        if (targetEl) targetEl.remove();
+      }
+
+      renderMessage({
+        sender: "시스템",
+        sentAt: msg?.sentAt || new Date(),
+        content: `메시지가 ${deletedActor}에 의해 삭제되었습니다.`
+      }, false);
+      return true;
+    }
+
+    function extractDeletedEvent(msg) {
+      if (!msg || msg.sender !== "시스템") return null;
+      const content = String(msg.content || "").trim();
+      if (!content.startsWith("[deleted]")) return null;
+      return content.slice(9).trim() || "관리자";
     }
 
     function extractImageUrl(content) {
