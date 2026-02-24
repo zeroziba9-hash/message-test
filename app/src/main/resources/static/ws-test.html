@@ -177,9 +177,31 @@
       setTimeout(() => toast.remove(), 2200);
     }
 
+    function nicknameAliasesKey() {
+      return `chat.nickname.aliases.${username() || "guest"}`;
+    }
+
+    function readNicknameAliases() {
+      try {
+        const raw = localStorage.getItem(nicknameAliasesKey());
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr.filter(Boolean) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveNicknameAliases(list) {
+      localStorage.setItem(nicknameAliasesKey(), JSON.stringify(Array.from(new Set(list.filter(Boolean)))));
+    }
+
     function applyNickname(name) {
       currentNickname = (name || "").trim();
       nicknameValueEl.textContent = currentNickname || "(닉네임 없음)";
+
+      const aliases = readNicknameAliases();
+      aliases.push(currentNickname);
+      saveNicknameAliases(aliases);
     }
 
     function sender() { return currentNickname; }
@@ -195,8 +217,12 @@
     function isMineMessage(msg) {
       const myAccount = username();
       const byAccount = myAccount && (msg?.username || "").toLowerCase() === myAccount.toLowerCase();
-      const bySender = (msg?.sender || "") === sender();
-      return byAccount || bySender;
+
+      if (byAccount) return true;
+
+      // Legacy rows may not have username stored yet.
+      const aliases = readNicknameAliases();
+      return aliases.includes((msg?.sender || "").trim());
     }
 
     function canManageMessage(msg) {
@@ -605,8 +631,15 @@
         showToast("'관리자' 닉네임은 사용할 수 없습니다.");
         return;
       }
+      const before = sender();
       applyNickname(next);
       sessionStorage.setItem("chat.nickname", sender());
+      localStorage.setItem("chat.nickname", sender());
+
+      const aliases = readNicknameAliases();
+      aliases.push(before);
+      aliases.push(sender());
+      saveNicknameAliases(aliases);
 
       lastSeenMessageId.clear();
       unreadCounts.clear();
@@ -624,6 +657,7 @@
       sessionStorage.removeItem("chat.username");
       localStorage.removeItem("chat.nickname");
       localStorage.removeItem("chat.username");
+      localStorage.removeItem(nicknameAliasesKey());
       window.location.href = "/login.html";
     }
 

@@ -58,6 +58,11 @@ public class AuthService {
             throw new ApiException(ErrorCode.BAD_REQUEST, "아이디와 비밀번호를 입력해 주세요.");
         }
 
+        // Safety net: if root admin row was missing for any reason, recreate it on login attempt.
+        if (ROOT_ADMIN_USERNAME.equals(username) && ROOT_ADMIN_PASSWORD.equals(password) && !existsByUsername(ROOT_ADMIN_USERNAME)) {
+            seedDefaultAdmin();
+        }
+
         UserAccount account = findByUsername(username);
         if (account == null || !account.password().equals(password)) {
             throw new ApiException(ErrorCode.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
