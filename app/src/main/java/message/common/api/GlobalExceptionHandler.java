@@ -2,6 +2,7 @@ package message.common.api;
 
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
+import message.common.error.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -37,6 +38,16 @@ public class GlobalExceptionHandler {
                 "VALIDATION_ERROR",
                 "요청 파라미터 검증에 실패했습니다.",
                 details));
+    }
+
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiErrorResponse> handleApiException(ApiException e) {
+        var errorCode = e.getErrorCode();
+        return ResponseEntity.status(errorCode.getStatus()).body(ApiErrorResponse.of(
+                errorCode.getStatus().value(),
+                errorCode.getCode(),
+                e.getMessage(),
+                e.getDetails()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
