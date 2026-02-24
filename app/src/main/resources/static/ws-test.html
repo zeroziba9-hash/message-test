@@ -191,6 +191,22 @@
         <div class="content">${textOnly}</div>
       `;
 
+      if (canManageMessage(msg)) {
+        const menuBtn = document.createElement("button");
+        menuBtn.type = "button";
+        menuBtn.className = "msg-menu-btn";
+        menuBtn.textContent = "⋮";
+        menuBtn.title = "메시지 메뉴";
+        menuBtn.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          selectedMessage = msg;
+          const rect = menuBtn.getBoundingClientRect();
+          openMenu(messageMenuEl, rect.left, rect.bottom + 6);
+        });
+        wrap.appendChild(menuBtn);
+      }
+
       const contentBodyEl = wrap.querySelector(".content");
 
       if (imageUrl) {

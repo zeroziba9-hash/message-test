@@ -295,6 +295,7 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
 }
 
 .message {
+  position: relative;
   width: fit-content;
   max-width: 72%;
   padding: 11px 12px;
@@ -316,7 +317,22 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
 
 .meta .sender { font-size: 18px; font-weight: 800; color: #f1f6ff; }
 
-.content { white-space: pre-wrap; word-break: break-word; font-size: 14px; }
+.msg-menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  padding: 0;
+  line-height: 1;
+  font-size: 14px;
+  background: rgba(0,0,0,.32);
+  border: 1px solid rgba(255,255,255,.18);
+  color: #e9edf6;
+}
+
+.content { white-space: pre-wrap; word-break: break-word; font-size: 14px; padding-right: 22px; }
 
 .composer {
   border-top: 1px solid var(--line);
