@@ -1,6 +1,7 @@
 package message.auth;
 
 import jakarta.validation.Valid;
+import message.common.api.ApiResponse;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,12 +18,12 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public AuthResponse signup(@Valid @RequestBody SignupRequest request) {
-        return authService.signup(request);
+    public ApiResponse<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
+        return ApiResponse.ok(authService.signup(request));
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ApiResponse.ok(authService.login(request));
     }
 }

@@ -4,10 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +14,10 @@ public class ChatService {
     private static final int MAX_MESSAGES_PER_CHANNEL = 100;
 
     private final AtomicLong sequence = new AtomicLong(1);
-    private final Map<String, Deque<ChatMessage>> channelMessages = new ConcurrentHashMap<>();
-    private final CopyOnWriteArrayList<String> channelOrder = new CopyOnWriteArrayList<>();
+    private final ChatRepository chatRepository;
 
-    public ChatService() {
+    public ChatService(ChatRepository chatRepository) {
+        this.chatRepository = chatRepository;
         createChannel(DEFAULT_CHANNEL);
     }
 
@@ -45,14 +42,12 @@ public class ChatService {
                 content,
                 Instant.now());
 
-        channelMessages.compute(normalizedChannelId, (key, deque) -> {
-            Deque<ChatMessage> messages = (deque != null) ? deque : new ConcurrentLinkedDeque<>();
-            messages.addLast(message);
-            while (messages.size() > MAX_MESSAGES_PER_CHANNEL) {
-                messages.pollFirst();
-            }
-            return messages;
-        });
+        Deque<ChatMessage> messages = new ConcurrentLinkedDeque<>(chatRepository.getMessages(normalizedChannelId));
+        messages.addLast(message);
+        while (messages.size() > MAX_MESSAGES_PER_CHANNEL) {
+            messages.pollFirst();
+        }
+        chatRepository.upsertMessages(normalizedChannelId, messages);
 
         return message;
     }
@@ -61,7 +56,7 @@ public class ChatService {
         var normalizedChannelId = normalizeChannelId(channelId);
         createChannel(normalizedChannelId);
 
-        var messages = channelMessages.getOrDefault(normalizedChannelId, new ConcurrentLinkedDeque<>());
+        var messages = chatRepository.getMessages(normalizedChannelId);
         int safeLimit = Math.max(1, Math.min(limit, MAX_MESSAGES_PER_CHANNEL));
         List<ChatMessage> all = new ArrayList<>(messages);
         int fromIndex = Math.max(0, all.size() - safeLimit);
@@ -70,7 +65,7 @@ public class ChatService {
 
     public ChatMessage findMessage(String channelId, long messageId) {
         var normalizedChannelId = normalizeChannelId(channelId);
-        var messages = channelMessages.getOrDefault(normalizedChannelId, new ConcurrentLinkedDeque<>());
+        var messages = chatRepository.getMessages(normalizedChannelId);
         for (ChatMessage message : messages) {
             if (message.getId() == messageId) {
                 return message;
@@ -93,22 +88,20 @@ public class ChatService {
 
     public void deleteMessage(String channelId, long messageId) {
         var normalizedChannelId = normalizeChannelId(channelId);
-        var messages = channelMessages.getOrDefault(normalizedChannelId, new ConcurrentLinkedDeque<>());
+        Deque<ChatMessage> messages = new ConcurrentLinkedDeque<>(chatRepository.getMessages(normalizedChannelId));
 
         ChatMessage target = findMessage(normalizedChannelId, messageId);
         messages.remove(target);
+        chatRepository.upsertMessages(normalizedChannelId, messages);
     }
 
     public List<String> listChannels() {
-        return new ArrayList<>(channelOrder);
+        return chatRepository.listChannels();
     }
 
     public String createChannel(String channelId) {
         var normalized = normalizeChannelId(channelId);
-        channelMessages.computeIfAbsent(normalized, key -> new ConcurrentLinkedDeque<>());
-        if (!channelOrder.contains(normalized)) {
-            channelOrder.add(normalized);
-        }
+        chatRepository.createChannelIfAbsent(normalized);
         return normalized;
     }
 
@@ -130,8 +123,7 @@ public class ChatService {
             createChannel(channelId);
         }
 
-        channelOrder.clear();
-        channelOrder.addAll(normalized);
+        chatRepository.replaceChannelOrder(normalized);
         return listChannels();
     }
 
