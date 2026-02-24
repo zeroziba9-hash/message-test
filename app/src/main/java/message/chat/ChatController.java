@@ -6,7 +6,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.List;
-import org.springframework.http.HttpStatus;
+import message.common.api.ApiResponse;
+import message.common.error.ApiException;
+import message.common.error.ErrorCode;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,7 +22,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @Validated
 @RestController
@@ -49,7 +50,7 @@ public class ChatController {
             @Header("simpSessionId") String sessionId) {
         var access = accessControlService.getSummary(request.getSender(), channelId);
         if (!access.isCanRead()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 채널을 읽을 권한이 없습니다");
+            throw new ApiException(ErrorCode.FORBIDDEN, "이 채널을 읽을 권한이 없습니다");
         }
 
         var snapshot = presenceService.join(channelId, request.getSender(), sessionId);
@@ -60,7 +61,7 @@ public class ChatController {
     public void send(@DestinationVariable String channelId, @Valid ChatSendRequest request) {
         var access = accessControlService.getSummary(request.getSender(), channelId);
         if (!access.isCanWrite()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 채널에 메시지를 보낼 권한이 없습니다");
+            throw new ApiException(ErrorCode.FORBIDDEN, "이 채널에 메시지를 보낼 권한이 없습니다");
         }
 
         ChatMessage message = chatService.saveMessage(channelId, request);
@@ -68,81 +69,81 @@ public class ChatController {
     }
 
     @GetMapping("/api/channels")
-    public List<String> listChannels() {
-        return chatService.listChannels();
+    public ApiResponse<List<String>> listChannels() {
+        return ApiResponse.ok(chatService.listChannels());
     }
 
     @PostMapping("/api/admin/channels")
-    public List<String> createChannel(
+    public ApiResponse<List<String>> createChannel(
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
             @RequestParam @NotBlank(message = "channelId는 필수입니다.") String channelId) {
         requireAdmin(sender, ChatService.DEFAULT_CHANNEL);
         chatService.createChannel(channelId);
-        return chatService.listChannels();
+        return ApiResponse.ok(chatService.listChannels());
     }
 
     @PostMapping("/api/admin/channels/reorder")
-    public List<String> reorderChannels(
+    public ApiResponse<List<String>> reorderChannels(
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
             @Valid @RequestBody ChannelOrderRequest request) {
         requireAdmin(sender, ChatService.DEFAULT_CHANNEL);
-        return chatService.reorderChannels(request.getChannelIds());
+        return ApiResponse.ok(chatService.reorderChannels(request.getChannelIds()));
     }
 
     @GetMapping("/api/channels/{channelId}/messages")
-    public List<ChatMessage> getMessages(
+    public ApiResponse<List<ChatMessage>> getMessages(
             @PathVariable String channelId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
             @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit) {
         var access = accessControlService.getSummary(sender, channelId);
         if (!access.isCanRead()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 채널을 읽을 권한이 없습니다");
+            throw new ApiException(ErrorCode.FORBIDDEN, "이 채널을 읽을 권한이 없습니다");
         }
 
-        return chatService.getRecentMessages(channelId, limit);
+        return ApiResponse.ok(chatService.getRecentMessages(channelId, limit));
     }
 
     @GetMapping("/api/channels/{channelId}/online-users")
-    public PresenceUpdate getOnlineUsers(
+    public ApiResponse<PresenceUpdate> getOnlineUsers(
             @PathVariable String channelId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender) {
         var access = accessControlService.getSummary(sender, channelId);
         if (!access.isCanRead()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 채널을 읽을 권한이 없습니다");
+            throw new ApiException(ErrorCode.FORBIDDEN, "이 채널을 읽을 권한이 없습니다");
         }
 
-        return presenceService.snapshot(channelId);
+        return ApiResponse.ok(presenceService.snapshot(channelId));
     }
 
     @GetMapping("/api/access/{channelId}")
-    public AccessSummary getAccess(
+    public ApiResponse<AccessSummary> getAccess(
             @PathVariable String channelId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender) {
-        return accessControlService.getSummary(sender, channelId);
+        return ApiResponse.ok(accessControlService.getSummary(sender, channelId));
     }
 
     @PostMapping("/api/admin/users/{sender}/role")
-    public AccessSummary setUserRole(
+    public ApiResponse<AccessSummary> setUserRole(
             @PathVariable String sender,
             @RequestParam @NotBlank(message = "actor는 필수입니다.") String actor,
             @RequestParam @NotBlank(message = "role은 필수입니다.") String role) {
         requireAdmin(actor, ChatService.DEFAULT_CHANNEL);
-        return accessControlService.setUserRole(sender, role);
+        return ApiResponse.ok(accessControlService.setUserRole(sender, role));
     }
 
     @PostMapping("/api/admin/channels/{channelId}/permissions")
-    public ChannelPermission setChannelPermission(
+    public ApiResponse<ChannelPermission> setChannelPermission(
             @PathVariable String channelId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
             @RequestParam @NotBlank(message = "role은 필수입니다.") String role,
             @RequestParam boolean canRead,
             @RequestParam boolean canWrite) {
         requireAdmin(sender, channelId);
-        return accessControlService.setChannelPermission(channelId, role, canRead, canWrite);
+        return ApiResponse.ok(accessControlService.setChannelPermission(channelId, role, canRead, canWrite));
     }
 
     @PutMapping("/api/channels/{channelId}/messages/{messageId}")
-    public ChatMessage updateMessage(
+    public ApiResponse<ChatMessage> updateMessage(
             @PathVariable String channelId,
             @PathVariable long messageId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
@@ -152,11 +153,11 @@ public class ChatController {
 
         ChatMessage updated = chatService.updateMessage(channelId, messageId, request.getContent());
         messagingTemplate.convertAndSend("/sub/channels/" + channelId, updated);
-        return updated;
+        return ApiResponse.ok(updated);
     }
 
     @DeleteMapping("/api/channels/{channelId}/messages/{messageId}")
-    public void deleteMessage(
+    public ApiResponse<Void> deleteMessage(
             @PathVariable String channelId,
             @PathVariable long messageId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender) {
@@ -168,12 +169,13 @@ public class ChatController {
         messagingTemplate.convertAndSend(
                 "/sub/channels/" + channelId,
                 new ChatMessage(messageId, channelId, "시스템", "[deleted]" + actor, Instant.now()));
+        return ApiResponse.ok(null);
     }
 
     private void requireAdmin(String sender, String channelId) {
         var access = accessControlService.getSummary(sender, channelId);
         if (access.getRole() != ChatRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자만 수행할 수 있습니다");
+            throw new ApiException(ErrorCode.FORBIDDEN, "관리자만 수행할 수 있습니다");
         }
     }
 
@@ -183,7 +185,7 @@ public class ChatController {
         boolean isOwner = sender.equals(target.getSender());
 
         if (!isAdmin && !isOwner) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 메시지 또는 관리자만 수정/삭제할 수 있습니다");
+            throw new ApiException(ErrorCode.FORBIDDEN, "본인 메시지 또는 관리자만 수정/삭제할 수 있습니다");
         }
     }
 }

@@ -74,6 +74,6 @@ class ApplicationApiTest {
                         .content(loginPayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.username").value("devuser"));
+                .andExpect(jsonPath("$.data.username").value("devuser"));
     }
 }
