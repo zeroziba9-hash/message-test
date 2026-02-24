@@ -300,7 +300,7 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   position: relative;
   width: fit-content;
   max-width: 72%;
-  padding: 11px 12px;
+  padding: 12px 12px;
   border: 1px solid rgba(255, 72, 102, .38);
   border-radius: 14px;
   background: linear-gradient(180deg, #1a1317, #151115);
@@ -332,15 +332,22 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
 .meta {
   font-size: 12px;
   color: #c3d2f4;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding-right: 24px;
+  line-height: 1.25;
 }
 
-.meta .sender { font-size: 18px; font-weight: 800; color: #f1f6ff; }
+.meta .sender {
+  display: inline-block;
+  font-size: 18px;
+  font-weight: 800;
+  color: #f1f6ff;
+  line-height: 1.2;
+}
 
 .msg-menu-btn {
   position: absolute;
@@ -363,8 +370,9 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
-  line-height: 1.45;
+  line-height: 1.5;
   font-size: 14px;
+  padding-top: 1px;
 }
 
 .composer {
