@@ -713,14 +713,48 @@
 
       const body = document.createElement("div");
       body.className = "link-preview-body";
-      body.innerHTML = `
-        <div class="link-preview-title">YouTube 미리보기</div>
-        <div class="link-preview-url">${escapeHtml(parsed.watchUrl)}</div>
-      `;
+
+      const providerEl = document.createElement("div");
+      providerEl.className = "link-preview-provider";
+      providerEl.textContent = "YouTube";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "link-preview-title";
+      titleEl.textContent = "불러오는 중...";
+
+      const authorEl = document.createElement("div");
+      authorEl.className = "link-preview-author";
+      authorEl.textContent = "";
+
+      const urlEl = document.createElement("div");
+      urlEl.className = "link-preview-url";
+      urlEl.textContent = parsed.watchUrl;
+
+      body.appendChild(providerEl);
+      body.appendChild(titleEl);
+      body.appendChild(authorEl);
+      body.appendChild(urlEl);
 
       card.appendChild(thumb);
       card.appendChild(body);
       parentEl.appendChild(card);
+
+      loadYouTubeMeta(parsed.watchUrl, titleEl, authorEl);
+    }
+
+    async function loadYouTubeMeta(watchUrl, titleEl, authorEl) {
+      try {
+        const endpoint = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`;
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error("oEmbed fetch failed");
+
+        const data = await res.json();
+        titleEl.textContent = data?.title?.trim() || "YouTube 영상";
+        authorEl.textContent = data?.author_name?.trim() || "";
+      } catch {
+        titleEl.textContent = "YouTube 미리보기";
+        authorEl.textContent = "";
+      }
     }
 
     function parseYouTubeUrl(url) {
