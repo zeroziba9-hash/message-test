@@ -304,7 +304,6 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   border: 1px solid rgba(255, 72, 102, .38);
   border-radius: 14px;
   background: linear-gradient(180deg, #1a1317, #151115);
-  overflow: hidden;
 }
 
 .message:hover .msg-menu-btn { opacity: 1; }
@@ -335,6 +334,7 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   color: #c3d2f4;
   margin-bottom: 5px;
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 10px;
   padding-right: 24px;
@@ -358,7 +358,14 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   opacity: .28;
 }
 
-.content { white-space: pre-wrap; word-break: break-word; font-size: 14px; }
+.content {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  font-size: 14px;
+}
 
 .composer {
   border-top: 1px solid var(--line);
@@ -396,6 +403,11 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   height: auto;
   border-radius: 10px;
   border: 1px solid #8aa5ea55;
+}
+
+.message .chat-image,
+.message .link-preview {
+  max-width: 100%;
 }
 
 .chat-link {
