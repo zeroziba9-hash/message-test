@@ -115,7 +115,9 @@ public class AccessControlService {
     }
 
     private void seedDefaults() {
-        if (!existsRole("admin")) {
+        if (existsRole("admin")) {
+            jdbcTemplate.update("UPDATE user_roles SET role = ? WHERE sender = ?", ChatRole.ADMIN.name(), "admin");
+        } else {
             jdbcTemplate.update("INSERT INTO user_roles(sender, role) VALUES(?, ?)", "admin", ChatRole.ADMIN.name());
         }
 
