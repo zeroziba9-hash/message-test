@@ -85,6 +85,11 @@ public class AccessControlService {
     }
 
     private ChatRole findRole(String sender) {
+        // Safety rule: built-in admin account must always keep ADMIN role.
+        if ("admin".equalsIgnoreCase(sender)) {
+            return ChatRole.ADMIN;
+        }
+
         var rows = jdbcTemplate.query(
                 "SELECT role FROM user_roles WHERE sender = ?",
                 (rs, rowNum) -> ChatRole.from(rs.getString("role")),
