@@ -300,10 +300,11 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   position: relative;
   width: fit-content;
   max-width: 72%;
-  padding: 12px 12px;
+  padding: 13px 12px 12px;
   border: 1px solid rgba(255, 72, 102, .38);
   border-radius: 14px;
   background: linear-gradient(180deg, #1a1317, #151115);
+  overflow: visible;
 }
 
 .message:hover .msg-menu-btn { opacity: 1; }
@@ -332,21 +333,28 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
 .meta {
   font-size: 12px;
   color: #c3d2f4;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  margin-bottom: 7px;
+  display: block;
   padding-right: 24px;
-  line-height: 1.25;
+  line-height: 1.35;
 }
 
 .meta .sender {
-  display: inline-block;
+  display: inline;
   font-size: 18px;
   font-weight: 800;
   color: #f1f6ff;
-  line-height: 1.2;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.meta .sent-at {
+  display: inline;
+  margin-left: 8px;
+  font-size: 12px;
+  color: #c3d2f4;
+  line-height: 1.35;
+  vertical-align: middle;
 }
 
 .msg-menu-btn {
@@ -367,12 +375,12 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
 
 .content {
   display: block;
+  margin-top: 2px;
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
   line-height: 1.5;
   font-size: 14px;
-  padding-top: 1px;
 }
 
 .composer {

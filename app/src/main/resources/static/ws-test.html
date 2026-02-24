@@ -206,7 +206,7 @@
       wrap.innerHTML = `
         <div class="meta">
           <strong class="sender">${escapeHtml(msg.sender || "알수없음")}</strong>
-          <span>${escapeHtml(sentAt)}</span>
+          <span class="sent-at">${escapeHtml(sentAt)}</span>
         </div>
         <div class="content">${textOnly}</div>
       `;
