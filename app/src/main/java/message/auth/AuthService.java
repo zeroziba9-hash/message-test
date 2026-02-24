@@ -11,6 +11,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
+    public static final String ROOT_ADMIN_USERNAME = "admin1234";
+    public static final String ROOT_ADMIN_PASSWORD = "admin1234";
+    public static final String ROOT_ADMIN_NICKNAME = "관리자";
+
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-z0-9]{4,20}$");
     private static final int PASSWORD_MIN = 4;
     private static final int PASSWORD_MAX = 20;
@@ -63,12 +67,21 @@ public class AuthService {
     }
 
     private void seedDefaultAdmin() {
-        if (!existsByUsername("admin")) {
+        // Remove legacy admin account.
+        jdbcTemplate.update("DELETE FROM users WHERE username = ?", "admin");
+
+        if (existsByUsername(ROOT_ADMIN_USERNAME)) {
+            jdbcTemplate.update(
+                    "UPDATE users SET password = ?, nickname = ? WHERE username = ?",
+                    ROOT_ADMIN_PASSWORD,
+                    ROOT_ADMIN_NICKNAME,
+                    ROOT_ADMIN_USERNAME);
+        } else {
             jdbcTemplate.update(
                     "INSERT INTO users(username, password, nickname, created_at) VALUES(?, ?, ?, ?)",
-                    "admin",
-                    "admin",
-                    "관리자",
+                    ROOT_ADMIN_USERNAME,
+                    ROOT_ADMIN_PASSWORD,
+                    ROOT_ADMIN_NICKNAME,
                     Timestamp.from(Instant.now()));
         }
     }

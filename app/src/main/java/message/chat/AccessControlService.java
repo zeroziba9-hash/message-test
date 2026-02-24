@@ -1,5 +1,6 @@
 package message.chat;
 
+import message.auth.AuthService;
 import message.common.error.ApiException;
 import message.common.error.ErrorCode;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -86,7 +87,7 @@ public class AccessControlService {
 
     private ChatRole findRole(String sender) {
         // Safety rule: built-in admin account must always keep ADMIN role.
-        if ("admin".equalsIgnoreCase(sender)) {
+        if (AuthService.ROOT_ADMIN_USERNAME.equalsIgnoreCase(sender)) {
             return ChatRole.ADMIN;
         }
 
@@ -120,10 +121,19 @@ public class AccessControlService {
     }
 
     private void seedDefaults() {
-        if (existsRole("admin")) {
-            jdbcTemplate.update("UPDATE user_roles SET role = ? WHERE sender = ?", ChatRole.ADMIN.name(), "admin");
+        // Remove legacy admin role mapping.
+        jdbcTemplate.update("DELETE FROM user_roles WHERE sender = ?", "admin");
+
+        if (existsRole(AuthService.ROOT_ADMIN_USERNAME)) {
+            jdbcTemplate.update(
+                    "UPDATE user_roles SET role = ? WHERE sender = ?",
+                    ChatRole.ADMIN.name(),
+                    AuthService.ROOT_ADMIN_USERNAME);
         } else {
-            jdbcTemplate.update("INSERT INTO user_roles(sender, role) VALUES(?, ?)", "admin", ChatRole.ADMIN.name());
+            jdbcTemplate.update(
+                    "INSERT INTO user_roles(sender, role) VALUES(?, ?)",
+                    AuthService.ROOT_ADMIN_USERNAME,
+                    ChatRole.ADMIN.name());
         }
 
         Integer channelCount = jdbcTemplate.queryForObject(
