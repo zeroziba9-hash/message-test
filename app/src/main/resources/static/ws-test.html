@@ -628,7 +628,7 @@
           return hideMenus();
         }
 
-        await loadHistory();
+        // 실시간 브로드캐스트로 화면이 갱신되므로 전체 히스토리 재로딩은 생략
         showToast("메시지 수정 완료");
       }
 
@@ -645,7 +645,8 @@
           return hideMenus();
         }
 
-        await loadHistory();
+        // 실시간 삭제 이벤트가 오면 해당 메시지 제거 + 시스템 안내를 렌더링함
+        // (여기서 loadHistory를 호출하면 시스템 안내가 즉시 사라질 수 있음)
         showToast("메시지 삭제 완료");
       }
 
