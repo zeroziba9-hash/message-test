@@ -559,7 +559,13 @@
       menu.classList.remove("hidden");
     }
 
-    function hideMenus() {
+    function hideMenus(event = null) {
+      if (event?.target) {
+        const insideMessageMenu = messageMenuEl.contains(event.target);
+        const insideUserMenu = userMenuEl.contains(event.target);
+        if (insideMessageMenu || insideUserMenu) return;
+      }
+
       messageMenuEl.classList.add("hidden");
       userMenuEl.classList.add("hidden");
       selectedMessage = null;
@@ -567,14 +573,22 @@
     }
 
     async function onMessageMenuClick(event) {
-      const action = event.target?.dataset?.action;
-      if (!action || !selectedMessage?.id) return;
+      event.preventDefault();
+      event.stopPropagation();
+
+      const actionEl = event.target?.closest?.("button[data-action]");
+      const action = actionEl?.dataset?.action;
+      const targetMessage = selectedMessage;
+      if (!action || !targetMessage?.id) {
+        hideMenus();
+        return;
+      }
 
       if (action === "edit") {
-        const next = prompt("수정할 메시지 내용을 입력하세요.", selectedMessage.content || "");
+        const next = prompt("수정할 메시지 내용을 입력하세요.", targetMessage.content || "");
         if (!next || !next.trim()) return hideMenus();
 
-        const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages/${selectedMessage.id}?sender=${encodeURIComponent(sender())}`, {
+        const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages/${targetMessage.id}?sender=${encodeURIComponent(sender())}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: next.trim() })
@@ -591,9 +605,9 @@
       }
 
       if (action === "delete") {
-        if (!confirm(`메시지 #${selectedMessage.id}를 삭제할까요?`)) return hideMenus();
+        if (!confirm(`메시지 #${targetMessage.id}를 삭제할까요?`)) return hideMenus();
 
-        const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages/${selectedMessage.id}?sender=${encodeURIComponent(sender())}`, {
+        const res = await fetch(`/api/channels/${encodeURIComponent(currentChannel)}/messages/${targetMessage.id}?sender=${encodeURIComponent(sender())}`, {
           method: "DELETE"
         });
 
@@ -611,16 +625,24 @@
     }
 
     async function onUserMenuClick(event) {
-      const role = event.target?.dataset?.role;
-      if (!role || !selectedUser) return;
+      event.preventDefault();
+      event.stopPropagation();
 
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(selectedUser)}/role?actor=${encodeURIComponent(sender())}&role=${encodeURIComponent(role)}`, { method: "POST" });
+      const roleEl = event.target?.closest?.("button[data-role]");
+      const role = roleEl?.dataset?.role;
+      const targetUser = selectedUser;
+      if (!role || !targetUser) {
+        hideMenus();
+        return;
+      }
+
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(targetUser)}/role?actor=${encodeURIComponent(sender())}&role=${encodeURIComponent(role)}`, { method: "POST" });
       if (!res.ok) {
         showToast("권한 변경 실패");
         return hideMenus();
       }
 
-      showToast(`${selectedUser} 역할을 ${role}로 변경했습니다.`);
+      showToast(`${targetUser} 역할을 ${role}로 변경했습니다.`);
       await refreshAccess();
       await loadOnlineUsers();
       hideMenus();
