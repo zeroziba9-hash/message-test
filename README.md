@@ -19,12 +19,24 @@
 - Java 17
 - Spring Boot 3.3.2
 - Spring Web / WebSocket(STOMP + SockJS)
+- Spring JDBC
+- MySQL (prod) / H2 (local default)
 - Bean Validation
 - Gradle
 
 ## Run (Windows)
 ```bash
 gradlew.bat :app:bootRun
+```
+
+기본은 H2 인메모리 DB로 실행됩니다(개발 편의용).
+
+MySQL 사용 시 환경변수 예시:
+```bash
+set DB_URL=jdbc:mysql://localhost:3306/message_test?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+set DB_USER=root
+set DB_PASSWORD=your_password
+set DB_DRIVER=com.mysql.cj.jdbc.Driver
 ```
 
 기본 접속:
@@ -126,6 +138,14 @@ app/src/main/java/message
 - 프론트(`login.html`, `ws-test.html`)에서 래핑 응답/기존 응답 동시 호환 처리
 - 실패 테스트 수정 (`$.username` → `$.data.username`)
 - 불필요한 문서 산출물 정리
+
+### 4차 (DB 영구저장)
+- `spring-boot-starter-jdbc` + MySQL/H2 드라이버 추가
+- `schema.sql` 기반 테이블 자동 초기화
+- 인증(`AuthService`)을 DB 기반으로 전환 (users)
+- 채널/메시지(`ChatRepository`, `ChatService`)를 DB 기반으로 전환
+- 역할/채널 권한(`AccessControlService`)을 DB 기반으로 전환
+- 기본 관리자 계정/역할/기본 채널 시드 로직 추가
 
 ### 대표 코드 (실시간 삭제)
 ```js

@@ -1,27 +1,26 @@
 package message.chat;
 
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
+import message.common.error.ApiException;
+import message.common.error.ErrorCode;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AccessControlService {
 
-    private final Map<String, ChatRole> userRoles = new ConcurrentHashMap<>();
-    private final Map<String, Map<ChatRole, ChannelPermission>> channelPermissions = new ConcurrentHashMap<>();
+    private final JdbcTemplate jdbcTemplate;
 
-    public AccessControlService() {
-        userRoles.put("관리자", ChatRole.ADMIN);
+    public AccessControlService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+        seedDefaults();
     }
 
     public AccessSummary getSummary(String sender, String channelId) {
         String normalizedSender = normalize(sender, "sender");
         String normalizedChannel = normalize(channelId, "channelId");
 
-        ChatRole role = userRoles.getOrDefault(normalizedSender, ChatRole.MEMBER);
-        ChannelPermission permission = resolvePermission(normalizedChannel, role);
+        ChatRole role = findRole(normalizedSender);
+        ChannelPermission permission = findChannelPermission(normalizedChannel, role);
 
         return new AccessSummary(
                 normalizedSender,
@@ -34,8 +33,14 @@ public class AccessControlService {
     public AccessSummary setUserRole(String sender, String role) {
         String normalizedSender = normalize(sender, "sender");
         ChatRole parsedRole = ChatRole.from(role);
-        userRoles.put(normalizedSender, parsedRole);
-        return getSummary(normalizedSender, "general");
+
+        if (existsRole(normalizedSender)) {
+            jdbcTemplate.update("UPDATE user_roles SET role = ? WHERE sender = ?", parsedRole.name(), normalizedSender);
+        } else {
+            jdbcTemplate.update("INSERT INTO user_roles(sender, role) VALUES(?, ?)", normalizedSender, parsedRole.name());
+        }
+
+        return getSummary(normalizedSender, ChatService.DEFAULT_CHANNEL);
     }
 
     public ChannelPermission setChannelPermission(String channelId, String role, boolean canRead, boolean canWrite) {
@@ -43,35 +48,102 @@ public class AccessControlService {
         ChatRole parsedRole = ChatRole.from(role);
 
         if (!canRead && canWrite) {
-            throw new IllegalArgumentException("읽기 없이 쓰기만 허용할 수 없습니다");
+            throw new ApiException(ErrorCode.BAD_REQUEST, "읽기 없이 쓰기만 허용할 수 없습니다");
         }
 
-        channelPermissions.computeIfAbsent(normalizedChannel, key -> new ConcurrentHashMap<>())
-                .put(parsedRole, new ChannelPermission(canRead, canWrite));
+        if (existsPermission(normalizedChannel, parsedRole)) {
+            jdbcTemplate.update(
+                    "UPDATE channel_permissions SET can_read = ?, can_write = ? WHERE channel_id = ? AND role = ?",
+                    canRead,
+                    canWrite,
+                    normalizedChannel,
+                    parsedRole.name());
+        } else {
+            jdbcTemplate.update(
+                    "INSERT INTO channel_permissions(channel_id, role, can_read, can_write) VALUES(?, ?, ?, ?)",
+                    normalizedChannel,
+                    parsedRole.name(),
+                    canRead,
+                    canWrite);
+        }
 
-        return resolvePermission(normalizedChannel, parsedRole);
+        return findChannelPermission(normalizedChannel, parsedRole);
     }
 
-    private ChannelPermission resolvePermission(String channelId, ChatRole role) {
-        Map<ChatRole, ChannelPermission> rolePermissions = channelPermissions
-                .computeIfAbsent(channelId, key -> defaultPermissions());
-
-        return rolePermissions.getOrDefault(role, new ChannelPermission(false, false));
+    private boolean existsRole(String sender) {
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM user_roles WHERE sender = ?", Integer.class, sender);
+        return count != null && count > 0;
     }
 
-    private Map<ChatRole, ChannelPermission> defaultPermissions() {
-        Map<ChatRole, ChannelPermission> defaults = new EnumMap<>(ChatRole.class);
-        defaults.put(ChatRole.ADMIN, new ChannelPermission(true, true));
-        defaults.put(ChatRole.MODERATOR, new ChannelPermission(true, true));
-        defaults.put(ChatRole.MEMBER, new ChannelPermission(true, true));
-        defaults.put(ChatRole.GUEST, new ChannelPermission(true, false));
-        return defaults;
+    private boolean existsPermission(String channelId, ChatRole role) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM channel_permissions WHERE channel_id = ? AND role = ?",
+                Integer.class,
+                channelId,
+                role.name());
+        return count != null && count > 0;
+    }
+
+    private ChatRole findRole(String sender) {
+        var rows = jdbcTemplate.query(
+                "SELECT role FROM user_roles WHERE sender = ?",
+                (rs, rowNum) -> ChatRole.from(rs.getString("role")),
+                sender);
+
+        return rows.isEmpty() ? ChatRole.MEMBER : rows.get(0);
+    }
+
+    private ChannelPermission findChannelPermission(String channelId, ChatRole role) {
+        var rows = jdbcTemplate.query(
+                "SELECT can_read, can_write FROM channel_permissions WHERE channel_id = ? AND role = ?",
+                (rs, rowNum) -> new ChannelPermission(rs.getBoolean("can_read"), rs.getBoolean("can_write")),
+                channelId,
+                role.name());
+
+        if (!rows.isEmpty()) {
+            return rows.get(0);
+        }
+
+        return defaultPermission(role);
+    }
+
+    private ChannelPermission defaultPermission(ChatRole role) {
+        return switch (role) {
+            case ADMIN, MODERATOR, MEMBER -> new ChannelPermission(true, true);
+            case GUEST -> new ChannelPermission(true, false);
+        };
+    }
+
+    private void seedDefaults() {
+        if (!existsRole("관리자")) {
+            jdbcTemplate.update("INSERT INTO user_roles(sender, role) VALUES(?, ?)", "관리자", ChatRole.ADMIN.name());
+        }
+
+        Integer channelCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM channels WHERE channel_id = ?",
+                Integer.class,
+                ChatService.DEFAULT_CHANNEL);
+        if (channelCount == null || channelCount == 0) {
+            jdbcTemplate.update("INSERT INTO channels(channel_id, sort_order) VALUES(?, 1)", ChatService.DEFAULT_CHANNEL);
+        }
+
+        for (ChatRole role : ChatRole.values()) {
+            if (!existsPermission(ChatService.DEFAULT_CHANNEL, role)) {
+                ChannelPermission p = defaultPermission(role);
+                jdbcTemplate.update(
+                        "INSERT INTO channel_permissions(channel_id, role, can_read, can_write) VALUES(?, ?, ?, ?)",
+                        ChatService.DEFAULT_CHANNEL,
+                        role.name(),
+                        p.isCanRead(),
+                        p.isCanWrite());
+            }
+        }
     }
 
     private String normalize(String value, String fieldName) {
         String normalized = value == null ? null : value.trim();
         if (normalized == null || normalized.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " is required");
+            throw new ApiException(ErrorCode.BAD_REQUEST, fieldName + " is required");
         }
         return normalized;
     }

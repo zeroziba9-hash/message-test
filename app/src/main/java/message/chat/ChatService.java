@@ -1,11 +1,9 @@
 package message.chat;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicLong;
+import message.common.error.ApiException;
+import message.common.error.ErrorCode;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,7 +11,6 @@ public class ChatService {
     public static final String DEFAULT_CHANNEL = "자유채팅방";
     private static final int MAX_MESSAGES_PER_CHANNEL = 100;
 
-    private final AtomicLong sequence = new AtomicLong(1);
     private final ChatRepository chatRepository;
 
     public ChatService(ChatRepository chatRepository) {
@@ -29,70 +26,49 @@ public class ChatService {
         var content = safeTrim(request.getContent());
 
         if (sender == null || sender.isBlank()) {
-            throw new IllegalArgumentException("sender is required");
+            throw new ApiException(ErrorCode.BAD_REQUEST, "sender is required");
         }
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("content is required");
+            throw new ApiException(ErrorCode.BAD_REQUEST, "content is required");
         }
 
-        ChatMessage message = new ChatMessage(
-                sequence.getAndIncrement(),
-                normalizedChannelId,
-                sender,
-                content,
-                Instant.now());
-
-        Deque<ChatMessage> messages = new ConcurrentLinkedDeque<>(chatRepository.getMessages(normalizedChannelId));
-        messages.addLast(message);
-        while (messages.size() > MAX_MESSAGES_PER_CHANNEL) {
-            messages.pollFirst();
-        }
-        chatRepository.upsertMessages(normalizedChannelId, messages);
-
-        return message;
+        return chatRepository.saveMessage(normalizedChannelId, sender, content, Instant.now());
     }
 
     public List<ChatMessage> getRecentMessages(String channelId, int limit) {
         var normalizedChannelId = normalizeChannelId(channelId);
         createChannel(normalizedChannelId);
 
-        var messages = chatRepository.getMessages(normalizedChannelId);
         int safeLimit = Math.max(1, Math.min(limit, MAX_MESSAGES_PER_CHANNEL));
-        List<ChatMessage> all = new ArrayList<>(messages);
-        int fromIndex = Math.max(0, all.size() - safeLimit);
-        return all.subList(fromIndex, all.size());
+        return chatRepository.getRecentMessages(normalizedChannelId, safeLimit);
     }
 
     public ChatMessage findMessage(String channelId, long messageId) {
         var normalizedChannelId = normalizeChannelId(channelId);
-        var messages = chatRepository.getMessages(normalizedChannelId);
-        for (ChatMessage message : messages) {
-            if (message.getId() == messageId) {
-                return message;
-            }
+        var message = chatRepository.findMessage(normalizedChannelId, messageId);
+        if (message == null) {
+            throw new ApiException(ErrorCode.NOT_FOUND, "message not found");
         }
-        throw new IllegalArgumentException("message not found");
+        return message;
     }
 
     public ChatMessage updateMessage(String channelId, long messageId, String content) {
         var normalizedContent = safeTrim(content);
 
         if (normalizedContent == null || normalizedContent.isBlank()) {
-            throw new IllegalArgumentException("content is required");
+            throw new ApiException(ErrorCode.BAD_REQUEST, "content is required");
         }
 
-        ChatMessage message = findMessage(channelId, messageId);
-        message.setContent(normalizedContent);
-        return message;
+        findMessage(channelId, messageId);
+        return chatRepository.updateMessage(normalizeChannelId(channelId), messageId, normalizedContent);
     }
 
     public void deleteMessage(String channelId, long messageId) {
         var normalizedChannelId = normalizeChannelId(channelId);
-        Deque<ChatMessage> messages = new ConcurrentLinkedDeque<>(chatRepository.getMessages(normalizedChannelId));
-
-        ChatMessage target = findMessage(normalizedChannelId, messageId);
-        messages.remove(target);
-        chatRepository.upsertMessages(normalizedChannelId, messages);
+        int deleted = chatRepository.deleteMessage(normalizedChannelId, messageId);
+        if (deleted == 0) {
+            throw new ApiException(ErrorCode.NOT_FOUND, "message not found");
+        }
     }
 
     public List<String> listChannels() {
@@ -107,7 +83,7 @@ public class ChatService {
 
     public List<String> reorderChannels(List<String> channelIds) {
         if (channelIds == null || channelIds.isEmpty()) {
-            throw new IllegalArgumentException("channelIds is required");
+            throw new ApiException(ErrorCode.BAD_REQUEST, "channelIds is required");
         }
 
         List<String> normalized = channelIds.stream()
@@ -116,11 +92,7 @@ public class ChatService {
                 .toList();
 
         if (!normalized.contains(DEFAULT_CHANNEL)) {
-            throw new IllegalArgumentException("기본 채널은 제거할 수 없습니다");
-        }
-
-        for (String channelId : normalized) {
-            createChannel(channelId);
+            throw new ApiException(ErrorCode.BAD_REQUEST, "기본 채널은 제거할 수 없습니다");
         }
 
         chatRepository.replaceChannelOrder(normalized);
@@ -130,7 +102,7 @@ public class ChatService {
     private String normalizeChannelId(String channelId) {
         var normalized = safeTrim(channelId);
         if (normalized == null || normalized.isBlank()) {
-            throw new IllegalArgumentException("channelId is required");
+            throw new ApiException(ErrorCode.BAD_REQUEST, "channelId is required");
         }
         return normalized;
     }
