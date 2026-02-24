@@ -2,6 +2,8 @@
 
 실시간 채팅(WebSocket STOMP) + 인증/권한 관리 + 관리자 기능을 포함한 Spring Boot 3 샘플 프로젝트입니다.
 
+> Current Version: **v0.3.0**
+
 ## 목차
 - [Tech Stack](#tech-stack)
 - [Run (Windows)](#run-windows)
