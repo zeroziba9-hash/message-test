@@ -74,8 +74,12 @@
                 }
 
                 const payload = data?.data ?? data;
-                sessionStorage.setItem('chat.username', payload.username || username);
-                sessionStorage.setItem('chat.nickname', payload.nickname || username);
+                const resolvedUsername = payload.username || username;
+                const resolvedNickname = payload.nickname || username;
+                sessionStorage.setItem('chat.username', resolvedUsername);
+                sessionStorage.setItem('chat.nickname', resolvedNickname);
+                localStorage.setItem('chat.username', resolvedUsername);
+                localStorage.setItem('chat.nickname', resolvedNickname);
                 statusEl.textContent = '로그인 성공. 채팅 화면으로 이동합니다...';
                 statusEl.classList.add('ok');
 

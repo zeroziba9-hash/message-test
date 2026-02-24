@@ -120,8 +120,15 @@
 
     const storedNickname = sessionStorage.getItem("chat.nickname")
       || localStorage.getItem("chat.nickname")
+      || sessionStorage.getItem("chat.username")
+      || localStorage.getItem("chat.username")
       || "사용자1";
     sessionStorage.setItem("chat.nickname", storedNickname);
+
+    if (!username()) {
+      alert("로그인이 필요합니다.");
+      window.location.href = "/login.html";
+    }
 
     let currentNickname = storedNickname;
     applyNickname(currentNickname);
@@ -177,7 +184,7 @@
 
     function sender() { return currentNickname; }
     function username() {
-      return sessionStorage.getItem("chat.username") || localStorage.getItem("chat.username") || currentNickname;
+      return (sessionStorage.getItem("chat.username") || localStorage.getItem("chat.username") || "").trim();
     }
 
     function setStatus(connected, label = null) {
@@ -609,6 +616,8 @@
       sessionStorage.removeItem(seenStorageKey());
       sessionStorage.removeItem("chat.nickname");
       sessionStorage.removeItem("chat.username");
+      localStorage.removeItem("chat.nickname");
+      localStorage.removeItem("chat.username");
       window.location.href = "/login.html";
     }
 
