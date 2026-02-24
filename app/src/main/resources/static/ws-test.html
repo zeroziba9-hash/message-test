@@ -145,6 +145,21 @@
       }
     });
 
+    contentEl.addEventListener("focus", () => {
+      setTimeout(() => {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }, 120);
+    });
+
+    if (window.visualViewport) {
+      const syncViewport = () => {
+        document.documentElement.style.setProperty("--vvh", `${window.visualViewport.height}px`);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      };
+      window.visualViewport.addEventListener("resize", syncViewport);
+      syncViewport();
+    }
+
     function showToast(message) {
       const prev = document.querySelector(".toast");
       if (prev) prev.remove();

@@ -20,6 +20,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 18px;
   color: var(--text);
   font: 14px/1.5 Inter, 'Noto Sans KR', Arial, sans-serif;
@@ -31,7 +32,7 @@ body {
 
 .app {
   width: min(1440px, 100%);
-  height: min(900px, calc(100vh - 36px));
+  height: min(900px, calc(var(--vvh, 100dvh) - 36px));
   margin: 0 auto;
   border: 1px solid var(--line-strong);
   border-radius: 20px;
@@ -303,6 +304,7 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
   border: 1px solid rgba(255, 72, 102, .38);
   border-radius: 14px;
   background: linear-gradient(180deg, #1a1317, #151115);
+  overflow: hidden;
 }
 
 .message:hover .msg-menu-btn { opacity: 1; }
@@ -389,7 +391,9 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
 .hint { font-size: 12px; color: var(--muted); margin-top: 0; }
 
 .chat-image {
+  width: 100%;
   max-width: min(360px, 60vw);
+  height: auto;
   border-radius: 10px;
   border: 1px solid #8aa5ea55;
 }
@@ -494,7 +498,84 @@ button:hover { background: #202025; border-color: rgba(255, 72, 102, .58); }
 }
 
 @media (max-width: 920px) {
-  body { padding: 10px; }
-  .app { grid-template-columns: 1fr; height: calc(100vh - 20px); }
+  body {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .app {
+    width: 100%;
+    height: var(--vvh, 100dvh);
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    grid-template-columns: 1fr;
+  }
+
   .sidebar { display: none; }
+
+  .topbar {
+    height: 56px;
+    padding: 0 12px;
+  }
+
+  .topbar h1 {
+    font-size: 20px;
+  }
+
+  .messages {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .message {
+    max-width: 92%;
+  }
+
+  .meta .sender {
+    font-size: 16px;
+  }
+
+  .composer {
+    position: sticky;
+    bottom: 0;
+    gap: 8px;
+    padding: 8px;
+    grid-template-columns: minmax(0, 1fr) 70px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .composer textarea {
+    min-height: 48px;
+    max-height: 120px;
+    resize: none;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .composer-tools {
+    margin-top: 4px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .hint {
+    font-size: 11px;
+  }
+
+  #sendBtn {
+    min-width: 70px;
+    height: 100%;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  .chat-image,
+  .link-preview {
+    max-width: 100%;
+  }
+
+  .link-preview-title {
+    font-size: 16px;
+  }
 }
