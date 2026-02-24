@@ -574,7 +574,8 @@
     }
 
     function openMenu(menu, x, y) {
-      hideMenus();
+      messageMenuEl.classList.add("hidden");
+      userMenuEl.classList.add("hidden");
       menu.style.left = `${x}px`;
       menu.style.top = `${y}px`;
       menu.classList.remove("hidden");
