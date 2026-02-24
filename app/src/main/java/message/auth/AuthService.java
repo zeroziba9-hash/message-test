@@ -109,6 +109,10 @@ public class AuthService {
         if (nickname == null || nickname.length() < NICKNAME_MIN || nickname.length() > NICKNAME_MAX) {
             throw new ApiException(ErrorCode.BAD_REQUEST, "닉네임은 2자 이상 20자 이하여야 합니다.");
         }
+
+        if ("관리자".equals(nickname)) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "'관리자' 닉네임은 사용할 수 없습니다.");
+        }
     }
 
     private String normalize(String value) {

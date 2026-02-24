@@ -115,8 +115,8 @@ public class AccessControlService {
     }
 
     private void seedDefaults() {
-        if (!existsRole("관리자")) {
-            jdbcTemplate.update("INSERT INTO user_roles(sender, role) VALUES(?, ?)", "관리자", ChatRole.ADMIN.name());
+        if (!existsRole("admin")) {
+            jdbcTemplate.update("INSERT INTO user_roles(sender, role) VALUES(?, ?)", "admin", ChatRole.ADMIN.name());
         }
 
         Integer channelCount = jdbcTemplate.queryForObject(

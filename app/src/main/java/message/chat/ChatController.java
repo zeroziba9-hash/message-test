@@ -48,7 +48,7 @@ public class ChatController {
             @DestinationVariable String channelId,
             @Valid ChatSendRequest request,
             @Header("simpSessionId") String sessionId) {
-        var access = accessControlService.getSummary(request.getSender(), channelId);
+        var access = accessControlService.getSummary(request.getUsername(), channelId);
         if (!access.isCanRead()) {
             throw new ApiException(ErrorCode.FORBIDDEN, "이 채널을 읽을 권한이 없습니다");
         }
@@ -59,7 +59,7 @@ public class ChatController {
 
     @MessageMapping("/channels/{channelId}")
     public void send(@DestinationVariable String channelId, @Valid ChatSendRequest request) {
-        var access = accessControlService.getSummary(request.getSender(), channelId);
+        var access = accessControlService.getSummary(request.getUsername(), channelId);
         if (!access.isCanWrite()) {
             throw new ApiException(ErrorCode.FORBIDDEN, "이 채널에 메시지를 보낼 권한이 없습니다");
         }
@@ -147,9 +147,11 @@ public class ChatController {
             @PathVariable String channelId,
             @PathVariable long messageId,
             @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
+            @RequestParam(required = false) String actor,
             @Valid @RequestBody MessageUpdateRequest request) {
+        String accountId = (actor == null || actor.isBlank()) ? sender : actor;
         ChatMessage target = chatService.findMessage(channelId, messageId);
-        requireMessagePermission(sender, channelId, target);
+        requireMessagePermission(accountId, sender, channelId, target);
 
         ChatMessage updated = chatService.updateMessage(channelId, messageId, request.getContent());
         messagingTemplate.convertAndSend("/sub/channels/" + channelId, updated);
@@ -160,15 +162,17 @@ public class ChatController {
     public ApiResponse<Void> deleteMessage(
             @PathVariable String channelId,
             @PathVariable long messageId,
-            @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender) {
+            @RequestParam @NotBlank(message = "sender는 필수입니다.") String sender,
+            @RequestParam(required = false) String actor) {
+        String accountId = (actor == null || actor.isBlank()) ? sender : actor;
         ChatMessage target = chatService.findMessage(channelId, messageId);
-        requireMessagePermission(sender, channelId, target);
+        requireMessagePermission(accountId, sender, channelId, target);
 
         chatService.deleteMessage(channelId, messageId);
-        String actor = sender.equals(target.getSender()) ? "사용자" : "관리자";
+        String actorLabel = sender.equals(target.getSender()) ? "사용자" : "관리자";
         messagingTemplate.convertAndSend(
                 "/sub/channels/" + channelId,
-                new ChatMessage(messageId, channelId, "시스템", "[deleted]" + actor, Instant.now()));
+                new ChatMessage(messageId, channelId, "시스템", "[deleted]" + actorLabel, Instant.now()));
         return ApiResponse.ok(null);
     }
 
@@ -179,10 +183,10 @@ public class ChatController {
         }
     }
 
-    private void requireMessagePermission(String sender, String channelId, ChatMessage target) {
-        var access = accessControlService.getSummary(sender, channelId);
+    private void requireMessagePermission(String accountId, String senderDisplay, String channelId, ChatMessage target) {
+        var access = accessControlService.getSummary(accountId, channelId);
         boolean isAdmin = access.getRole() == ChatRole.ADMIN;
-        boolean isOwner = sender.equals(target.getSender());
+        boolean isOwner = senderDisplay.equals(target.getSender());
 
         if (!isAdmin && !isOwner) {
             throw new ApiException(ErrorCode.FORBIDDEN, "본인 메시지 또는 관리자만 수정/삭제할 수 있습니다");
