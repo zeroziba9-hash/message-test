@@ -23,16 +23,20 @@ public class ChatService {
         createChannel(normalizedChannelId);
 
         var sender = safeTrim(request.getSender());
+        var username = safeTrim(request.getUsername());
         var content = safeTrim(request.getContent());
 
         if (sender == null || sender.isBlank()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, "sender is required");
         }
+        if (username == null || username.isBlank()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "username is required");
+        }
         if (content == null || content.isBlank()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, "content is required");
         }
 
-        return chatRepository.saveMessage(normalizedChannelId, sender, content, Instant.now());
+        return chatRepository.saveMessage(normalizedChannelId, sender, username, content, Instant.now());
     }
 
     public List<ChatMessage> getRecentMessages(String channelId, int limit) {

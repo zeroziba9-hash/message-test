@@ -28,8 +28,11 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     channel_id VARCHAR(100) NOT NULL,
     sender VARCHAR(50) NOT NULL,
+    username VARCHAR(50),
     content TEXT NOT NULL,
     sent_at TIMESTAMP NOT NULL
 );
+
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS username VARCHAR(50);
 
 CREATE INDEX IF NOT EXISTS idx_chat_messages_channel_id_id ON chat_messages(channel_id, id DESC);

@@ -6,6 +6,7 @@ public class ChatMessage {
     private long id;
     private String channelId;
     private String sender;
+    private String username;
     private String content;
     private Instant sentAt;
 
@@ -13,9 +14,14 @@ public class ChatMessage {
     }
 
     public ChatMessage(long id, String channelId, String sender, String content, Instant sentAt) {
+        this(id, channelId, sender, null, content, sentAt);
+    }
+
+    public ChatMessage(long id, String channelId, String sender, String username, String content, Instant sentAt) {
         this.id = id;
         this.channelId = channelId;
         this.sender = sender;
+        this.username = username;
         this.content = content;
         this.sentAt = sentAt;
     }
@@ -42,6 +48,14 @@ public class ChatMessage {
 
     public void setSender(String sender) {
         this.sender = sender;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getContent() {

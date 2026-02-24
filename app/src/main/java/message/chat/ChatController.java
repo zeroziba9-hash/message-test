@@ -186,7 +186,7 @@ public class ChatController {
     private void requireMessagePermission(String accountId, String senderDisplay, String channelId, ChatMessage target) {
         var access = accessControlService.getSummary(accountId, channelId);
         boolean isAdmin = access.getRole() == ChatRole.ADMIN;
-        boolean isOwner = senderDisplay.equals(target.getSender());
+        boolean isOwner = accountId.equalsIgnoreCase(target.getUsername()) || senderDisplay.equals(target.getSender());
 
         if (!isAdmin && !isOwner) {
             throw new ApiException(ErrorCode.FORBIDDEN, "본인 메시지 또는 관리자만 수정/삭제할 수 있습니다");

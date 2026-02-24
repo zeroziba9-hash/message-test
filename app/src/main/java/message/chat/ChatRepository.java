@@ -41,25 +41,27 @@ public class ChatRepository {
         }
     }
 
-    public ChatMessage saveMessage(String channelId, String sender, String content, Instant sentAt) {
+    public ChatMessage saveMessage(String channelId, String sender, String username, String content, Instant sentAt) {
         jdbcTemplate.update(
-                "INSERT INTO chat_messages(channel_id, sender, content, sent_at) VALUES(?, ?, ?, ?)",
+                "INSERT INTO chat_messages(channel_id, sender, username, content, sent_at) VALUES(?, ?, ?, ?, ?)",
                 channelId,
                 sender,
+                username,
                 content,
                 Timestamp.from(sentAt));
 
         Long id = jdbcTemplate.queryForObject("SELECT MAX(id) FROM chat_messages", Long.class);
-        return new ChatMessage(id == null ? 0 : id, channelId, sender, content, sentAt);
+        return new ChatMessage(id == null ? 0 : id, channelId, sender, username, content, sentAt);
     }
 
     public List<ChatMessage> getRecentMessages(String channelId, int limit) {
         List<ChatMessage> rows = jdbcTemplate.query(
-                "SELECT id, channel_id, sender, content, sent_at FROM chat_messages WHERE channel_id = ? ORDER BY id DESC LIMIT ?",
+                "SELECT id, channel_id, sender, username, content, sent_at FROM chat_messages WHERE channel_id = ? ORDER BY id DESC LIMIT ?",
                 (rs, rowNum) -> new ChatMessage(
                         rs.getLong("id"),
                         rs.getString("channel_id"),
                         rs.getString("sender"),
+                        rs.getString("username"),
                         rs.getString("content"),
                         rs.getTimestamp("sent_at").toInstant()),
                 channelId,
@@ -70,11 +72,12 @@ public class ChatRepository {
 
     public ChatMessage findMessage(String channelId, long messageId) {
         var rows = jdbcTemplate.query(
-                "SELECT id, channel_id, sender, content, sent_at FROM chat_messages WHERE channel_id = ? AND id = ?",
+                "SELECT id, channel_id, sender, username, content, sent_at FROM chat_messages WHERE channel_id = ? AND id = ?",
                 (rs, rowNum) -> new ChatMessage(
                         rs.getLong("id"),
                         rs.getString("channel_id"),
                         rs.getString("sender"),
+                        rs.getString("username"),
                         rs.getString("content"),
                         rs.getTimestamp("sent_at").toInstant()),
                 channelId,

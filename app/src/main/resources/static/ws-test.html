@@ -192,9 +192,15 @@
       statusDotEl.classList.toggle("ok", connected);
     }
 
+    function isMineMessage(msg) {
+      const myAccount = username();
+      const byAccount = myAccount && (msg?.username || "").toLowerCase() === myAccount.toLowerCase();
+      const bySender = (msg?.sender || "") === sender();
+      return byAccount || bySender;
+    }
+
     function canManageMessage(msg) {
-      const mine = (msg.sender || "") === sender();
-      return mine || currentRole === "ADMIN";
+      return isMineMessage(msg) || currentRole === "ADMIN";
     }
 
     function renderMessage(msg, mine = false) {
@@ -404,7 +410,7 @@
 
           if (handleRealtimeEvent(msg)) return;
 
-          const mine = (msg.sender || "") === sender();
+          const mine = isMineMessage(msg);
           renderMessage(msg, mine);
           if (msg?.id) setSeen(currentChannel, Number(msg.id));
         });
@@ -456,7 +462,7 @@
           return;
         }
         clearMessages();
-        data.forEach(msg => renderMessage(msg, (msg.sender || "") === sender()));
+        data.forEach(msg => renderMessage(msg, isMineMessage(msg)));
         markChannelSeen(currentChannel, data);
         await refreshUnreadBadges();
       } catch {
