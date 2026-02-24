@@ -207,6 +207,18 @@
         wrap.appendChild(menuBtn);
       }
 
+      const senderEl = wrap.querySelector(".sender");
+      if (currentRole === "ADMIN" && senderEl && msg.sender) {
+        senderEl.style.cursor = "context-menu";
+        senderEl.title = "우클릭: 사용자 권한 변경";
+        senderEl.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          selectedUser = msg.sender;
+          openMenu(userMenuEl, event.clientX, event.clientY);
+        });
+      }
+
       const contentBodyEl = wrap.querySelector(".content");
 
       if (imageUrl) {
@@ -225,13 +237,6 @@
           event.preventDefault();
           selectedMessage = msg;
           openMenu(messageMenuEl, event.clientX, event.clientY);
-          return;
-        }
-
-        if (currentRole === "ADMIN" && msg.sender) {
-          event.preventDefault();
-          selectedUser = msg.sender;
-          openMenu(userMenuEl, event.clientX, event.clientY);
         }
       });
 
