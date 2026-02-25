@@ -139,13 +139,15 @@ app/src/main/java/message
 - 실패 테스트 수정 (`$.username` → `$.data.username`)
 - 불필요한 문서 산출물 정리
 
-### 4차 (DB 영구저장)
+### 4차 (DB 영구저장 + 프로젝트 정리)
 - `spring-boot-starter-jdbc` + MySQL/H2 드라이버 추가
 - `schema.sql` 기반 테이블 자동 초기화
 - 인증(`AuthService`)을 DB 기반으로 전환 (users)
 - 채널/메시지(`ChatRepository`, `ChatService`)를 DB 기반으로 전환
 - 역할/채널 권한(`AccessControlService`)을 DB 기반으로 전환
 - 기본 관리자 계정/역할/기본 채널 시드 로직 추가
+- 초기 템플릿 잔재(`massege` 패키지) 제거 및 테스트/엔트리포인트 정리
+- `app/bin` 산출물 추적 제거 + `.gitignore` 보강
 
 ### 대표 코드 (실시간 삭제)
 ```js

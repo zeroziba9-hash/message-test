@@ -7,3 +7,7 @@ build
 # Local file DB (H2)
 app/data/
 data/
+
+# IDE/compiler output
+app/bin/
+**/bin/
