@@ -16,6 +16,8 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
+      - name: Normalize gradlew line endings
+        run: sed -i 's/\r$//' gradlew
       - name: Make gradlew executable
         run: chmod +x gradlew
       - name: Run tests

@@ -21,6 +21,7 @@
 ## 3) 주요 기능
 ### Auth
 - 회원가입 / 로그인
+- 입력값 검증 + 중복 아이디 방지 + 표준 오류 응답
 
 ### Chat
 - 채널 목록 조회
@@ -52,7 +53,154 @@
 - `POST /api/admin/channels/reorder?sender={name}`
 - `POST /api/admin/channels/{channelId}/permissions?role={...}&canRead={true|false}&canWrite={true|false}`
 
-## 5) 실행
+---
+
+## 5) Authentication Response Model
+
+이 프로젝트의 인증 API는 **성공/실패 응답 포맷을 분리**해서 운영 시 파싱 안정성을 높였습니다.
+
+- 성공: `ApiResponse<T>`
+- 실패: `ApiErrorResponse`
+- 예외 라우팅: `GlobalExceptionHandler`
+
+### 5.1 성공 응답 예시 (회원가입 / 로그인)
+```json
+{
+  "timestamp": "2026-03-09T10:12:34.123Z",
+  "success": true,
+  "data": {
+    "success": true,
+    "message": "로그인 성공",
+    "username": "user01",
+    "nickname": "제로"
+  }
+}
+```
+
+### 5.2 실패 응답 예시 (유효성 오류 / 인증 실패)
+```json
+{
+  "timestamp": "2026-03-09T10:12:34.123Z",
+  "status": 401,
+  "code": "UNAUTHORIZED",
+  "message": "아이디 또는 비밀번호가 올바르지 않습니다.",
+  "details": []
+}
+```
+
+### 5.3 Auth API Request/Response Contract
+
+#### POST `/api/auth/signup`
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| username | string | Yes | `^[a-z0-9]{4,20}$` |
+| password | string | Yes | length `4~20` |
+| passwordConfirm | string | Yes | must match `password` |
+| nickname | string | Yes | length `2~20`, `관리자` reserved |
+
+Success `data` schema:
+```json
+{
+  "success": true,
+  "message": "회원가입이 완료되었습니다.",
+  "username": "user01",
+  "nickname": "제로"
+}
+```
+
+#### POST `/api/auth/login`
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| username | string | Yes | not blank |
+| password | string | Yes | not blank |
+
+Success `data` schema:
+```json
+{
+  "success": true,
+  "message": "로그인 성공",
+  "username": "user01",
+  "nickname": "제로"
+}
+```
+
+Common error codes (auth path):
+- `BAD_REQUEST`: invalid input / format mismatch
+- `CONFLICT`: duplicate username on signup
+- `UNAUTHORIZED`: invalid username/password on login
+
+> 참고: 현재 인증 API는 `signup/login` 중심입니다. (로그아웃 엔드포인트는 추후 세션/토큰 정책과 함께 확장 가능)
+
+---
+
+## 6) Core Implementation Snippets
+
+### 6.1 AuthController: 엔드포인트 + 표준 성공 응답 래핑
+`app/src/main/java/message/auth/AuthController.java`
+```java
+@PostMapping("/signup")
+public ApiResponse<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
+    return ApiResponse.ok(authService.signup(request));
+}
+
+@PostMapping("/login")
+public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    return ApiResponse.ok(authService.login(request));
+}
+```
+
+### 6.2 AuthService: 중복 체크 + JDBC 저장 + 인증 검증
+`app/src/main/java/message/auth/AuthService.java`
+```java
+if (existsByUsername(username)) {
+    throw new ApiException(ErrorCode.CONFLICT, "이미 사용 중인 아이디입니다.");
+}
+
+jdbcTemplate.update(
+    "INSERT INTO users(username, password, nickname, created_at) VALUES(?, ?, ?, ?)",
+    username, password, nickname, Timestamp.from(Instant.now()));
+```
+
+```java
+UserAccount account = findByUsername(username);
+if (account == null || !account.password().equals(password)) {
+    throw new ApiException(ErrorCode.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
+}
+```
+
+### 6.3 공통 성공 응답 모델
+`app/src/main/java/message/common/api/ApiResponse.java`
+```java
+public record ApiResponse<T>(
+        Instant timestamp,
+        boolean success,
+        T data) {
+
+    public static <T> ApiResponse<T> ok(T data) {
+        return new ApiResponse<>(Instant.now(), true, data);
+    }
+}
+```
+
+### 6.4 공통 오류 응답 + 전역 예외 처리
+- `app/src/main/java/message/common/api/ApiErrorResponse.java`
+- `app/src/main/java/message/common/api/GlobalExceptionHandler.java`
+
+```java
+@ExceptionHandler(ApiException.class)
+public ResponseEntity<ApiErrorResponse> handleApiException(ApiException e) {
+    var errorCode = e.getErrorCode();
+    return ResponseEntity.status(errorCode.getStatus()).body(ApiErrorResponse.of(
+            errorCode.getStatus().value(),
+            errorCode.getCode(),
+            e.getMessage(),
+            e.getDetails()));
+}
+```
+
+---
+
+## 7) 실행
 ```bash
 gradlew.bat :app:bootRun
 ```
@@ -68,24 +216,24 @@ gradlew.bat :app:bootRun
 gradlew.bat :app:test
 ```
 
-## 6) Observability / Ops
+## 8) Observability / Ops
 - Health: `/actuator/health`
 - Readiness/Liveness probes: enabled
 - Prometheus metrics: `/actuator/prometheus`
 - 운영 대응 가이드: `docs/runbook.md`
 - ADR: `docs/adr/0001-session-auth-over-token.md`
 
-## 7) Performance Smoke (k6)
+## 9) Performance Smoke (k6)
 ```bash
 k6 run perf/k6-smoke.js
 ```
 
-## 8) Local Infra (MySQL + Redis)
+## 10) Local Infra (MySQL + Redis)
 ```bash
 docker compose -f docker-compose.infra.yml up -d
 ```
 
-## 9) 실행 스크린샷
+## 11) 실행 스크린샷
 
 ### 로그인 화면
 ![login-page](docs/screenshots/login-page.png)
@@ -99,7 +247,7 @@ docker compose -f docker-compose.infra.yml up -d
 ### 채팅 메인 화면
 ![chat-main](docs/screenshots/chat-main.png)
 
-## 10) Engineering Standards
+## 12) Engineering Standards
 - CI: `.github/workflows/ci.yml`
 - PR Template: `.github/pull_request_template.md`
 - Code style baseline: `.editorconfig`
